@@ -114,6 +114,16 @@
     <Setter Property="Foreground" Value="#DDFFFFFF" />
   </Style>
 
+  <Style Selector="Button.update">
+    <Setter Property="Background" Value="#2EA043" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+  <Style Selector="Button.update:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#238636" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
   <Style Selector="Border.badge">
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="Padding" Value="5,0,5,1" />

@@ -10,16 +10,19 @@ The builds are self-contained, so you don't need .NET to run QueueJanne.
 
 ### Windows: download a build (easiest)
 
-Every push to `main` is built and tested by GitHub Actions (`.github/workflows/build.yml`).
+Every push to `main` is built and tested by GitHub Actions (`.github/workflows/build.yml`) and published as a [release](https://github.com/d4vv4/QueueJanne/releases), numbered `0.6.<build>`.
 
-1. On GitHub, open **Actions → Build** and click the latest successful run on `main`.
-2. Under **Artifacts**, download **QueueJanne-windows** (you need to be signed in to GitHub).
-3. Unzip it to a folder of your own, for example `%LOCALAPPDATA%\Programs\QueueJanne`, and start `QueueJanne.exe`. Pin it to the Start menu or taskbar if you like.
-4. Windows SmartScreen may warn the first time because the exe isn't signed: click **More info → Run anyway**.
+1. Open the [latest release](https://github.com/d4vv4/QueueJanne/releases/latest) and download `QueueJanne-windows-x64-<version>.zip`.
+2. Unzip it to a folder of your own, for example `%LOCALAPPDATA%\Programs\QueueJanne`, and start `QueueJanne.exe`. Pin it to the Start menu or taskbar if you like.
+3. Windows SmartScreen may warn the first time because the exe isn't signed: click **More info → Run anyway**.
 
-To update, download a newer run's artifact and replace the two files (close QueueJanne first). The first start after an update takes longer while Windows scans the new exe.
+### Updates
 
-macOS builds are in the workflow too, but switched off. Add a repository variable `BUILD_MACOS` with the value `true` (Settings → Secrets and variables → Actions → Variables) to turn them on; they then appear as **QueueJanne-macos-arm64** (Apple silicon) and **QueueJanne-macos-x64** (Intel). Until then, build on the Mac as below.
+QueueJanne looks for a newer release when it starts, and a green **Update to …** button appears in the status bar when there is one. **Help → Check for updates…** checks right away. Installing downloads the release, checks it against its published SHA-256 checksum, puts it in place of the program files (including the MCP server next to it) and restarts. Connections and settings in `~/.queuejanne` aren't touched. Turn off the check at startup under **Help → Check for updates at startup**.
+
+The first start after an update takes a little longer while Windows scans the new exe. A running MCP server keeps the old version until its Claude session restarts.
+
+macOS builds are in the workflow too, but switched off. Add a repository variable `BUILD_MACOS` with the value `true` (Settings → Secrets and variables → Actions → Variables) to turn them on; releases then also carry `QueueJanne-macos-arm64-<version>.zip` (Apple silicon) and `QueueJanne-macos-x64-<version>.zip` (Intel). Until then, build on the Mac as below.
 
 ### Windows: build it yourself
 

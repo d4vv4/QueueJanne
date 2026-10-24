@@ -22,6 +22,11 @@ public partial class App : Application
                 store.MigrateFrom(ConnectionStore.LegacyFolder());
             }
 
+            if (Core.Updates.UpdateInstaller.InstalledLocation() is { } installed)
+            {
+                Core.Updates.UpdateInstaller.RemoveLeftovers(installed);
+            }
+
             UiLagMonitor.StartIfRequested();
             var window = new MainWindow();
             window.DataContext = new MainWindowViewModel(store, window);

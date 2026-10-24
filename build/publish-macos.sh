@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # Builds QueueJanne.app with the MCP server inside it. Run it on a Mac.
-# Usage: ./build/publish-macos.sh [--install] [--rid osx-arm64|osx-x64]
+# Usage: ./build/publish-macos.sh [--install] [--rid osx-arm64|osx-x64] [--version 0.6.12]
 #   --install copies QueueJanne.app to ~/Applications.
 #   --rid builds for Apple silicon (osx-arm64) or Intel (osx-x64); the default is this Mac's kind.
+#   --version stamps the build; the default is the version in Directory.Build.props.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 install=false
 rid=""
+version=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --install) install=true ;;
     --rid) rid="$2"; shift ;;
+    --version) version="$2"; shift ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
   shift
@@ -23,12 +26,14 @@ if [[ -z "$rid" ]]; then
   esac
 fi
 out="$root/artifacts/$rid"
-version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$root/Directory.Build.props")"
+if [[ -z "$version" ]]; then
+  version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$root/Directory.Build.props")"
+fi
 
 dotnet publish "$root/src/QueueJanne.App" -c Release -r "$rid" --self-contained \
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -o "$out/app"
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -p:Version="$version" -o "$out/app"
 dotnet publish "$root/src/QueueJanne.Mcp" -c Release -r "$rid" --self-contained \
-  -p:PublishSingleFile=true -o "$out/mcp"
+  -p:PublishSingleFile=true -p:Version="$version" -o "$out/mcp"
 
 app="$out/QueueJanne.app"
 rm -rf "$app"

@@ -1,7 +1,8 @@
 # Builds QueueJanne.exe and queuejanne-mcp.exe for Windows. They're self-contained, so .NET isn't needed to run them.
-# Usage: powershell -ExecutionPolicy Bypass -File build\publish-windows.ps1 [-Install]
+# Usage: powershell -ExecutionPolicy Bypass -File build\publish-windows.ps1 [-Install] [-Version 0.6.12]
 #   -Install copies them to %LOCALAPPDATA%\Programs\QueueJanne and adds a Start menu shortcut.
-param([switch]$Install)
+#   -Version stamps the build; CI uses the version in Directory.Build.props with the run number as the patch.
+param([switch]$Install, [string]$Version)
 
 $ErrorActionPreference = "Stop"
 if (Get-Process QueueJanne, queuejanne-mcp -ErrorAction SilentlyContinue) {
@@ -10,12 +11,13 @@ if (Get-Process QueueJanne, queuejanne-mcp -ErrorAction SilentlyContinue) {
 
 $root = Split-Path $PSScriptRoot -Parent
 $out = Join-Path $root "artifacts\win-x64"
+$versionArgs = if ($Version) { @("-p:Version=$Version") } else { @() }
 
 dotnet publish (Join-Path $root "src\QueueJanne.App") -c Release -r win-x64 --self-contained `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -o $out
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -o $out @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "Building the app failed." }
 dotnet publish (Join-Path $root "src\QueueJanne.Mcp") -c Release -r win-x64 --self-contained `
-    -p:PublishSingleFile=true -o $out
+    -p:PublishSingleFile=true -o $out @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "Building the MCP server failed." }
 
 $app = Join-Path $out "QueueJanne.exe"

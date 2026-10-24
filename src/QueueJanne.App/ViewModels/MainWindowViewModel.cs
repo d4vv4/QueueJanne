@@ -53,6 +53,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         var nodes = store.Load().Select(AddConnectionNode).ToList();
         Dispatcher.UIThread.Post(() => nodes.ForEach(n => _ = n.LoadAsync()), DispatcherPriority.Background);
 
+        Updates = new UpdateViewModel(dialogs, text => StatusText = text, () => ExitCommand.Execute(null));
+        Dispatcher.UIThread.Post(() => _ = Updates.CheckQuietlyAsync(), DispatcherPriority.Background);
+
         if (Connections.Count > 0)
         {
             OpenOverview(null, preview: false);
@@ -64,6 +67,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     public ObservableCollection<ConnectionNodeViewModel> Connections { get; } = [];
+
+    public UpdateViewModel Updates { get; }
 
     public ObservableCollection<DocumentViewModel> Tabs { get; } = [];
 

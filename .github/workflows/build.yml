@@ -1,8 +1,8 @@
-# Tests every push and pull request, and on main publishes ready-to-download packages as workflow artifacts:
-#   QueueJanne-windows       QueueJanne.exe and queuejanne-mcp.exe, zipped
-#   QueueJanne-macos-arm64   QueueJanne.app for Apple silicon, zipped (when the BUILD_MACOS variable is 'true')
-#   QueueJanne-macos-x64     QueueJanne.app for Intel Macs, zipped (when the BUILD_MACOS variable is 'true')
-# Download them from the run's summary page, under Artifacts.
+# Tests every push and pull request. Every push to main also builds the packages and publishes them as a GitHub Release,
+# versioned from Directory.Build.props with the run number as the patch (0.6.12 for run 12). The app's
+# Check for updates reads the latest release.
+#   QueueJanne-windows-x64-<version>.zip      QueueJanne.exe and queuejanne-mcp.exe, with a .sha256 checksum
+#   QueueJanne-macos-<arch>-<version>.zip     QueueJanne.app (when the BUILD_MACOS variable is 'true')
 name: Build
 
 on:
@@ -22,6 +22,10 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,29 +36,49 @@ jobs:
       - name: Test
         run: dotnet test --solution QueueJanne.slnx
 
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $base = [version](Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
+          "version=$($base.Major).$($base.Minor).${{ github.run_number }}" >> $env:GITHUB_OUTPUT
+
       - name: Build Windows app
         if: github.event_name != 'pull_request'
         shell: pwsh
-        run: ./build/publish-windows.ps1
+        run: ./build/publish-windows.ps1 -Version ${{ steps.version.outputs.version }}
 
       - name: Zip
         if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
-          $version = (Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
-          Compress-Archive -Path artifacts/win-x64/QueueJanne.exe, artifacts/win-x64/queuejanne-mcp.exe `
-            -DestinationPath "QueueJanne-windows-x64-$version-${{ github.run_number }}.zip"
+          $zip = "QueueJanne-windows-x64-${{ steps.version.outputs.version }}.zip"
+          Compress-Archive -Path artifacts/win-x64/QueueJanne.exe, artifacts/win-x64/queuejanne-mcp.exe -DestinationPath $zip
+          "$((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant())  $zip" | Set-Content -NoNewline "$zip.sha256"
 
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request'
         with:
           name: QueueJanne-windows
-          path: QueueJanne-windows-x64-*.zip
+          path: QueueJanne-windows-x64-*
+
+      - name: Publish release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          gh release create "v$version" (Get-ChildItem "QueueJanne-windows-x64-$version.zip*").FullName `
+            --title "QueueJanne $version" --target ${{ github.sha }} --generate-notes
 
   macos:
     # Switched off until the repository variable BUILD_MACOS is set to 'true' (Settings → Secrets and variables → Actions → Variables).
-    if: github.event_name != 'pull_request' && vars.BUILD_MACOS == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.BUILD_MACOS == 'true'
+    needs: windows
     runs-on: macos-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         rid: [osx-arm64, osx-x64]
@@ -68,13 +92,15 @@ jobs:
       - name: Build QueueJanne.app
         run: |
           chmod +x build/publish-macos.sh
-          ./build/publish-macos.sh --rid ${{ matrix.rid }}
+          ./build/publish-macos.sh --rid ${{ matrix.rid }} --version ${{ needs.windows.outputs.version }}
 
       # ditto keeps the bundle's permissions and signature, which a plain zip loses.
-      - name: Zip
-        run: ditto -c -k --keepParent "artifacts/${{ matrix.rid }}/QueueJanne.app" "QueueJanne-macos-${{ matrix.rid }}-${{ github.run_number }}.zip"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: QueueJanne-macos-${{ matrix.rid == 'osx-arm64' && 'arm64' || 'x64' }}
-          path: QueueJanne-macos-*.zip
+      - name: Zip and add to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          arch=${{ matrix.rid == 'osx-arm64' && 'arm64' || 'x64' }}
+          zip="QueueJanne-macos-$arch-${{ needs.windows.outputs.version }}.zip"
+          ditto -c -k --keepParent "artifacts/${{ matrix.rid }}/QueueJanne.app" "$zip"
+          shasum -a 256 "$zip" > "$zip.sha256"
+          gh release upload "v${{ needs.windows.outputs.version }}" "$zip" "$zip.sha256"

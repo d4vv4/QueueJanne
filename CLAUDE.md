@@ -8,7 +8,8 @@ See README.md for what this repo does, how to install it and its projects. docs/
 - Driving the real app (Windows): `Import-Module tools/UiDriver/QueueJanne.UiDriver.psm1`, then `Start-QJ -Demo`, `Expand-QJ`, `Select-QJ`, `Invoke-QJ`, `Set-QJText`, `Get-QJDialog`, `Save-QJShot`, `Stop-QJ`. It starts the app with a throwaway `QUEUEJANNE_HOME`, so only the demo namespace is there; never drive it against real connections. Each PowerShell call is a new process; the module reattaches to the running app. `tools/UiDriver/Measure-Demo.ps1` times common steps and reports UI freezes.
 - Performance: `QUEUEJANNE_DIAGNOSTICS=<file>` makes the app log UI-thread freezes over 50 ms, with markers from `UiLagMonitor.Note`.
 - Packages: `build/publish-windows.ps1` (Windows) and `build/publish-macos.sh` (run on a Mac). Publishing fails while QueueJanne or its MCP server is running, because the exe is locked.
-- Base branch: `main`.
+- Base branch: `main`. Every push to `main` publishes a GitHub Release `v{major}.{minor}.{run number}` (major and minor from `Directory.Build.props`), which the app's Check for updates installs. So pushing to `main` ships to everyone who has auto-update on: only push what's tested.
+- Updates: `UpdateChecker` reads the latest release of the `UpdateRepository` in `Directory.Build.props`; `UpdateInstaller` renames the running files aside (`*.old-*`, removed at next start) and moves the new ones in. Development builds (a folder with `QueueJanne.dll`) don't update themselves.
 
 ## Rules
 - The tool is generic. Never design around how one team configures Service Bus. Read entity settings (max delivery count, sessions, duplicate detection, forwarding) live and adapt.

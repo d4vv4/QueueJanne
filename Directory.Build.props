@@ -7,5 +7,10 @@
     <Version>0.6.0</Version>
     <Product>QueueJanne</Product>
     <Authors>QueueJanne contributors</Authors>
+    <!-- The GitHub repository whose releases Check for updates reads. A fork sets its own. -->
+    <UpdateRepository>d4vv4/QueueJanne</UpdateRepository>
   </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="UpdateRepository" Value="$(UpdateRepository)" />
+  </ItemGroup>
 </Project>
