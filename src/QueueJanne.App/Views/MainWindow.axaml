@@ -67,7 +67,7 @@
       <MenuItem Header="_View">
         <MenuItem Header="Dead-letter _overview (all connections)" Command="{Binding ShowAllDeadLettersCommand}" />
         <MenuItem Header="_Refresh" Command="{Binding RefreshCommand}" InputGesture="F5" />
-        <MenuItem Header="_Auto-refresh counts every 15 seconds" ToggleType="CheckBox" IsChecked="{Binding AutoRefresh}" />
+        <MenuItem Header="_Auto-refresh counts" ToggleType="CheckBox" IsChecked="{Binding AutoRefresh}" />
         <MenuItem Header="_Properties pane" ToggleType="CheckBox" IsChecked="{Binding Settings.ShowProperties}" />
         <MenuItem Header="Operation _journal…" Command="{Binding OpenJournalCommand}"
                   ToolTip.Tip="Every resubmit, delete, move and purge, with a backup of the messages, from the app and from Claude" />
@@ -104,12 +104,14 @@
             <TextBlock Text="Refresh" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <ToggleButton AutomationProperties.Name="Auto-refresh" Classes="tool" IsChecked="{Binding AutoRefresh}" ToolTip.Tip="Refresh counts every 15 seconds">
+        <ToggleButton AutomationProperties.Name="Auto-refresh" Classes="tool" IsChecked="{Binding AutoRefresh}" ToolTip.Tip="{Binding AutoRefreshTip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" Classes.spinning-slow="{Binding AutoRefresh}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
             <TextBlock Text="Auto-refresh" VerticalAlignment="Center" />
           </StackPanel>
         </ToggleButton>
+        <ComboBox AutomationProperties.Name="Auto-refresh interval" ItemsSource="{Binding RefreshIntervals}" SelectedItem="{Binding RefreshEvery}"
+                  MinWidth="78" FontSize="12" VerticalAlignment="Center" ToolTip.Tip="How often auto-refresh updates the counts" />
         <Border Classes="divider" />
         <Button AutomationProperties.Name="Overview" Classes="tool" Command="{Binding ShowAllDeadLettersCommand}" ToolTip.Tip="Every queue and subscription with dead letters, in every connection">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -176,7 +178,7 @@
             <TextBlock Text="{Binding Updates.ProgressText}" VerticalAlignment="Center" AutomationProperties.Name="Update progress" />
           </StackPanel>
         </Panel>
-        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,14,0" IsVisible="{Binding AutoRefresh}" ToolTip.Tip="Counts refresh every 15 seconds">
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,14,0" IsVisible="{Binding AutoRefresh}" ToolTip.Tip="{Binding AutoRefreshTip}">
           <Ellipse Classes="live" Width="8" Height="8" Fill="#2EA043" VerticalAlignment="Center" />
           <TextBlock Text="Live" />
         </StackPanel>
@@ -218,6 +220,9 @@
               <Border Classes="node" Classes.pulse="{Binding IsPulsing}" Classes.rising="{Binding IsRising}" Classes.falling="{Binding IsFalling}"
                       Background="Transparent" Tapped="OnTreeRowTapped">
               <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent" ToolTip.Tip="{Binding ToolTip}">
+                <Ellipse Classes="state" Width="8" Height="8" VerticalAlignment="Center" IsVisible="{Binding IsConnection}"
+                         Classes.connected="{Binding IsStateConnected}" Classes.connecting="{Binding IsStateConnecting}" Classes.failed="{Binding IsStateFailed}"
+                         ToolTip.Tip="{Binding StateText}" />
                 <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Classes.spinning="{Binding IsBusy}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding CountText}" Classes="muted" VerticalAlignment="Center" />
@@ -251,6 +256,7 @@
               <MenuItem Header="Send message…" Command="{Binding SendMessageCommand}" />
               <MenuItem Header="Purge…" Command="{Binding PurgeSelectedNodeCommand}" />
               <Separator />
+              <MenuItem Header="Connect / disconnect" Command="{Binding ToggleConnectedCommand}" />
               <MenuItem Header="Read-only on/off…" Command="{Binding ToggleReadOnlyCommand}" />
               <MenuItem Header="Remove connection…" Command="{Binding RemoveConnectionCommand}" />
             </ContextMenu>

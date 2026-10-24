@@ -24,6 +24,12 @@ public static class CommandPalette
         foreach (var connection in main.Connections)
         {
             var name = connection.Profile.Name;
+            if (!connection.IsConnected)
+            {
+                items.Add(new PaletteItem($"Connect to {name}", connection.Profile.Namespace ?? string.Empty, $"{name} connect", 0, () => connection.IsExpanded = true));
+                continue;
+            }
+
             items.Add(new PaletteItem($"{name} overview", connection.Profile.Namespace ?? string.Empty, $"{name} overview dead letters", 0, () => main.OpenOverview(connection, preview: false)));
             foreach (var entity in connection.Entities.Where(e => e.Entity.Kind != EntityKind.Topic).OrderBy(e => e.Entity.Path, StringComparer.OrdinalIgnoreCase))
             {

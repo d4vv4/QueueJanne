@@ -32,6 +32,7 @@ var viewModel = new MainWindowViewModel(store, window);
 window.DataContext = viewModel;
 window.Show();
 
+viewModel.Connections[0].IsExpanded = true;
 Pump(() => viewModel.Connections.All(c => c.Snapshot is not null));
 var connection = viewModel.Connections[0];
 connection.FindEntity("billing-events")!.IsExpanded = true;
@@ -129,7 +130,7 @@ Pump(() => DateTime.UtcNow > pulseUntil);
 Save(window, Path.Combine(outputFolder, "pulse.png"));
 viewModel.AutoRefresh = false;
 
-viewModel.SelectedTab = viewModel.Tabs.OfType<OverviewViewModel>().First(o => o.Connection is null);
+viewModel.ShowAllDeadLettersCommand.Execute(null);
 Settle();
 Save(window, Path.Combine(outputFolder, "overview.png"));
 

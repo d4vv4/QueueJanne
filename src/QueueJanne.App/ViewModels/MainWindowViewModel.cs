@@ -15,8 +15,6 @@ namespace QueueJanne.App.ViewModels;
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(15);
-
     private readonly ConnectionStore _store;
     private readonly IDialogService _dialogs;
     private readonly DispatcherTimer _autoRefreshTimer;
@@ -44,26 +42,23 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         _store = store;
         _dialogs = dialogs;
-        _autoRefreshTimer = new DispatcherTimer { Interval = AutoRefreshInterval };
+        _autoRefreshTimer = new DispatcherTimer { Interval = RefreshEvery.Interval };
         _autoRefreshTimer.Tick += async (_, _) => await RefreshConnectionsAsync();
         Tabs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTabs));
         Connections.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasConnections));
 
-        // The tree shows the saved connections at once; their counts load after the window is up.
-        var nodes = store.Load().Select(AddConnectionNode).ToList();
-        Dispatcher.UIThread.Post(() => nodes.ForEach(n => _ = n.LoadAsync()), DispatcherPriority.Background);
+        // Saved connections are listed but not connected: expanding one connects it, so namespaces nobody looks at get no load.
+        foreach (var profile in store.Load())
+        {
+            AddConnectionNode(profile);
+        }
 
         Updates = new UpdateViewModel(dialogs, text => StatusText = text, () => ExitCommand.Execute(null));
         Dispatcher.UIThread.Post(Updates.StartChecking, DispatcherPriority.Background);
 
-        if (Connections.Count > 0)
-        {
-            OpenOverview(null, preview: false);
-        }
-
         StatusText = Connections.Count == 0
             ? "Add a connection to get started, or open the demo namespace from the File menu."
-            : "Ready";
+            : "Expand a connection to connect to it.";
     }
 
     public ObservableCollection<ConnectionNodeViewModel> Connections { get; } = [];
@@ -127,6 +122,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>The dead-letter overview for one connection, or for all of them when <paramref name="connection"/> is null.</summary>
     internal OverviewViewModel OpenOverview(ConnectionNodeViewModel? connection, bool preview)
     {
+        // A connection's own overview needs its counts, so opening it connects; the all-connections overview covers
+        // only the ones already connected.
+        if (connection is { IsConnected: false })
+        {
+            connection.IsExpanded = true;
+        }
+
         var existing = Tabs.OfType<OverviewViewModel>().FirstOrDefault(t => t.Connection == connection);
         if (existing is not null)
         {
@@ -253,8 +255,34 @@ public sealed partial class MainWindowViewModel : ObservableObject
             _autoRefreshTimer.Stop();
         }
 
-        StatusText = value ? "Auto-refresh is on: counts update every 15 seconds." : "Auto-refresh is off.";
+        StatusText = value ? $"Auto-refresh is on: counts of connected namespaces update {RefreshEvery.Every}." : "Auto-refresh is off.";
     }
+
+    public IReadOnlyList<RefreshInterval> RefreshIntervals => RefreshInterval.All;
+
+    /// <summary>The auto-refresh interval, kept in the settings.</summary>
+    public RefreshInterval RefreshEvery
+    {
+        get => RefreshInterval.For(Settings.AutoRefreshSeconds);
+        set
+        {
+            if (value is null || value.Seconds == Settings.AutoRefreshSeconds)
+            {
+                return;
+            }
+
+            Settings.AutoRefreshSeconds = value.Seconds;
+            _autoRefreshTimer.Interval = value.Interval;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AutoRefreshTip));
+            if (AutoRefresh)
+            {
+                StatusText = $"Auto-refresh: counts of connected namespaces update {value.Every}.";
+            }
+        }
+    }
+
+    public string AutoRefreshTip => $"Refresh the counts of connected namespaces {RefreshEvery.Every}";
 
     [RelayCommand]
     private async Task AddConnectionAsync()
@@ -280,9 +308,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         var node = AddConnectionNode(profile);
         SelectedNode = node;
-        OpenOverview(node, preview: true);
         StatusText = $"Connecting to {profile.Namespace}…";
-        await node.LoadAsync();
+        var loading = node.LoadAsync();
+        node.IsExpanded = true;
+        OpenOverview(node, preview: true);
+        await loading;
         StatusText = node.Error is null ? $"Connected to {profile.Namespace}." : $"Couldn't connect to {profile.Namespace}: {node.Error}";
     }
 
@@ -298,9 +328,43 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         var node = AddConnectionNode(_store.Save(ConnectionProfile.CreateDemo()));
         SelectedNode = node;
+        var loading = node.LoadAsync();
+        node.IsExpanded = true;
         OpenOverview(node, preview: true);
-        await node.LoadAsync();
+        await loading;
         StatusText = "Opened the demo namespace. Its data is made up and nothing leaves your machine.";
+    }
+
+    /// <summary>Connects the selected connection, or disconnects it: its tabs close and nothing more is sent to Azure.</summary>
+    [RelayCommand]
+    private async Task ToggleConnectedAsync()
+    {
+        if (SelectedNode?.Connection is not { } connection)
+        {
+            StatusText = "Select a connection first.";
+            return;
+        }
+
+        if (!connection.IsConnected)
+        {
+            connection.IsExpanded = true;
+            await connection.LoadAsync();
+            StatusText = connection.Error is null ? $"Connected to {connection.Profile.Name}." : $"Couldn't connect to {connection.Profile.Name}: {connection.Error}";
+            return;
+        }
+
+        CloseTabsOf(connection);
+        SelectedNode = connection;
+        await connection.DisconnectAsync();
+        StatusText = $"Disconnected from {connection.Profile.Name}.";
+    }
+
+    private void CloseTabsOf(ConnectionNodeViewModel connection)
+    {
+        foreach (var tab in Tabs.Where(t => t is EntityTabViewModel e && e.Connection == connection || t is OverviewViewModel o && o.Connection == connection).ToList())
+        {
+            CloseTab(tab);
+        }
     }
 
     [RelayCommand]
@@ -317,11 +381,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        foreach (var tab in Tabs.Where(t => t is EntityTabViewModel e && e.Connection == connection || t is OverviewViewModel o && o.Connection == connection).ToList())
-        {
-            CloseTab(tab);
-        }
-
+        CloseTabsOf(connection);
         _store.Remove(connection.Profile.Id);
         Connections.Remove(connection);
         SelectedNode = null;
@@ -541,7 +601,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IsRefreshing = true;
         try
         {
-            await Task.WhenAll(Connections.Select(c => c.LoadAsync()));
+            await Task.WhenAll(Connections.Where(c => c.IsConnected).Select(c => c.LoadAsync()));
         }
         finally
         {

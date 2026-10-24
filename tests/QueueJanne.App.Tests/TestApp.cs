@@ -59,6 +59,7 @@ public static class TestApp
         var viewModel = new MainWindowViewModel(store, dialogs);
         window.DataContext = viewModel;
         window.Show();
+        viewModel.Connections[0].IsExpanded = true;
         await WaitUntil(() => viewModel.Connections.All(c => c.Snapshot is not null), "the demo namespace has loaded");
         return (window, viewModel, dialogs);
     }

@@ -86,16 +86,21 @@ public sealed partial class OverviewViewModel : DocumentViewModel
 
         var total = rows.Sum(r => r.DeadLetters);
         var withDeadLetters = rows.Count(r => r.DeadLetters > 0);
-        var loading = scope.Count(c => c.Snapshot is null && c.Error is null);
-        var failed = scope.Where(c => c.Error is not null).Select(c => c.Profile.Name).ToList();
+        var connected = scope.Where(c => c.IsConnected).ToList();
+        var loading = connected.Count(c => c.Snapshot is null && c.Error is null);
+        var failed = connected.Where(c => c.Error is not null).Select(c => c.Profile.Name).ToList();
+        var notConnected = scope.Count - connected.Count;
         Summary = (scope.Count == 0
                 ? "No connections yet."
-                : total == 0
-                    ? "No dead letters."
-                    : $"{Formatting.Count(total)} dead letters in {Formatting.Count(withDeadLetters)} queues and subscriptions"
-                      + (Connection is null ? $" across {scope.Count} connections." : "."))
+                : connected.Count == 0
+                    ? "Not connected yet."
+                    : total == 0
+                        ? "No dead letters."
+                        : $"{Formatting.Count(total)} dead letters in {Formatting.Count(withDeadLetters)} queues and subscriptions"
+                          + (Connection is null ? $" across {connected.Count} connected namespace(s)." : "."))
             + (loading > 0 ? $" Still loading {loading} connection(s)." : string.Empty)
-            + (failed.Count > 0 ? $" Couldn't reach {string.Join(", ", failed)}." : string.Empty);
+            + (failed.Count > 0 ? $" Couldn't reach {string.Join(", ", failed)}." : string.Empty)
+            + (notConnected > 0 ? $" {notConnected} connection(s) not connected: expand them in Servers to include them." : string.Empty);
     }
 
     [RelayCommand]

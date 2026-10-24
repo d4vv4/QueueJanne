@@ -238,6 +238,30 @@
     </Style.Animations>
   </Style>
 
+  <!-- Connection status dot in the Servers tree: grey not connected, amber connecting, green connected, red failed. -->
+  <Style Selector="Ellipse.state">
+    <Setter Property="Fill" Value="#8B949E" />
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+  <Style Selector="Ellipse.state.connected">
+    <Setter Property="Fill" Value="#2EA043" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Ellipse.state.failed">
+    <Setter Property="Fill" Value="#DA3633" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Ellipse.state.connecting">
+    <Setter Property="Fill" Value="#D29922" />
+    <Style.Animations>
+      <Animation Duration="0:0:1" IterationCount="INFINITE" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
   <Style Selector="TextBlock.change.rising">
     <Setter Property="Foreground" Value="#D9822B" />
     <Setter Property="FontWeight" Value="SemiBold" />

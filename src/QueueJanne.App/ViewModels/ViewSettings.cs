@@ -32,6 +32,10 @@ public sealed partial class ViewSettings : ObservableObject
     [ObservableProperty]
     private bool _checkForUpdatesAutomatically = true;
 
+    /// <summary>How often auto-refresh reloads counts, one of <see cref="RefreshInterval.All"/>.</summary>
+    [ObservableProperty]
+    private int _autoRefreshSeconds = RefreshInterval.DefaultSeconds;
+
     public ViewSettings()
     {
     }
@@ -66,6 +70,8 @@ public sealed partial class ViewSettings : ObservableObject
 
     partial void OnCheckForUpdatesAutomaticallyChanged(bool value) => Save();
 
+    partial void OnAutoRefreshSecondsChanged(int value) => Save();
+
     [RelayCommand]
     private void ZoomIn() => Zoom = Math.Min(Math.Round(Zoom + 0.1, 1), MaxZoom);
 
@@ -91,6 +97,7 @@ public sealed partial class ViewSettings : ObservableObject
                 settings.Columns = ColumnCatalog.Normalize(stored.Columns);
                 settings.Zoom = Math.Clamp(stored.Zoom, MinZoom, MaxZoom);
                 settings.CheckForUpdatesAutomatically = stored.CheckForUpdatesAutomatically;
+                settings.AutoRefreshSeconds = RefreshInterval.For(stored.AutoRefreshSeconds).Seconds;
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -105,6 +112,7 @@ public sealed partial class ViewSettings : ObservableObject
             Columns = settings.Columns,
             Zoom = settings.Zoom,
             CheckForUpdatesAutomatically = settings.CheckForUpdatesAutomatically,
+            AutoRefreshSeconds = settings.AutoRefreshSeconds,
         };
     }
 
@@ -118,12 +126,12 @@ public sealed partial class ViewSettings : ObservableObject
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(new Stored(ShowProperties, PropertiesWidth, DetailsHeight, Columns.ToList(), Zoom, CheckForUpdatesAutomatically), JsonOptions));
+            File.WriteAllText(_path, JsonSerializer.Serialize(new Stored(ShowProperties, PropertiesWidth, DetailsHeight, Columns.ToList(), Zoom, CheckForUpdatesAutomatically, AutoRefreshSeconds), JsonOptions));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }
 
-    private sealed record Stored(bool ShowProperties, double PropertiesWidth, double DetailsHeight, List<ColumnSetting>? Columns, double Zoom = 1, bool CheckForUpdatesAutomatically = true);
+    private sealed record Stored(bool ShowProperties, double PropertiesWidth, double DetailsHeight, List<ColumnSetting>? Columns, double Zoom = 1, bool CheckForUpdatesAutomatically = true, int AutoRefreshSeconds = RefreshInterval.DefaultSeconds);
 }
