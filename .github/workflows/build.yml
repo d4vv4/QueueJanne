@@ -1,0 +1,80 @@
+# Tests every push and pull request, and on main publishes ready-to-download packages as workflow artifacts:
+#   QueueJanne-windows       QueueJanne.exe and queuejanne-mcp.exe, zipped
+#   QueueJanne-macos-arm64   QueueJanne.app for Apple silicon, zipped (when the BUILD_MACOS variable is 'true')
+#   QueueJanne-macos-x64     QueueJanne.app for Intel Macs, zipped (when the BUILD_MACOS variable is 'true')
+# Download them from the run's summary page, under Artifacts.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Test
+        run: dotnet test --solution QueueJanne.slnx
+
+      - name: Build Windows app
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        run: ./build/publish-windows.ps1
+
+      - name: Zip
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        run: |
+          $version = (Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
+          Compress-Archive -Path artifacts/win-x64/QueueJanne.exe, artifacts/win-x64/queuejanne-mcp.exe `
+            -DestinationPath "QueueJanne-windows-x64-$version-${{ github.run_number }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: QueueJanne-windows
+          path: QueueJanne-windows-x64-*.zip
+
+  macos:
+    # Switched off until the repository variable BUILD_MACOS is set to 'true' (Settings → Secrets and variables → Actions → Variables).
+    if: github.event_name != 'pull_request' && vars.BUILD_MACOS == 'true'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        rid: [osx-arm64, osx-x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build QueueJanne.app
+        run: |
+          chmod +x build/publish-macos.sh
+          ./build/publish-macos.sh --rid ${{ matrix.rid }}
+
+      # ditto keeps the bundle's permissions and signature, which a plain zip loses.
+      - name: Zip
+        run: ditto -c -k --keepParent "artifacts/${{ matrix.rid }}/QueueJanne.app" "QueueJanne-macos-${{ matrix.rid }}-${{ github.run_number }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QueueJanne-macos-${{ matrix.rid == 'osx-arm64' && 'arm64' || 'x64' }}
+          path: QueueJanne-macos-*.zip

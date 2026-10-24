@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:QueueJanne.App.ViewModels"
+             x:Class="QueueJanne.App.Views.OverviewView"
+             x:DataType="vm:OverviewViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Classes="toolbar">
+      <DockPanel>
+        <Button AutomationProperties.Name="Open dead letters" DockPanel.Dock="Right" Classes="tool" Command="{Binding OpenSelectedCommand}" ToolTip.Tip="Open the selected dead-letter queue (Enter or double-click)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EmailAlertOutline" Width="16" Height="16" />
+            <TextBlock Text="Open dead letters" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="4,0">
+          <mi:MaterialIcon Kind="ViewDashboardOutline" Width="18" Height="18" />
+          <TextBlock Text="{Binding Summary}" FontSize="13" VerticalAlignment="Center" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <DataGrid x:Name="Grid"
+              ItemsSource="{Binding Rows}"
+              SelectedItem="{Binding SelectedRow}"
+              IsReadOnly="True"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              DoubleTapped="OnRowDoubleTapped"
+              KeyDown="OnGridKeyDown">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Connection" Binding="{ReflectionBinding ConnectionName}" Width="140" />
+        <DataGridTextColumn Header="Queue or subscription" Binding="{ReflectionBinding Path}" Width="420" />
+        <DataGridTextColumn Header="Dead letters" Binding="{ReflectionBinding DeadLettersText}" SortMemberPath="DeadLetters" Width="125" />
+        <DataGridTemplateColumn Header="Change" SortMemberPath="Change" Width="100">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:OverviewRow">
+              <TextBlock Text="{Binding ChangeText}" VerticalAlignment="Center" Margin="12,0"
+                         Classes.rising="{Binding IsRising}" Classes.falling="{Binding IsFalling}" Classes="change" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Transfer DL" Binding="{ReflectionBinding TransferText}" Width="115" />
+        <DataGridTextColumn Header="Active" Binding="{ReflectionBinding ActiveText}" Width="90" />
+        <DataGridTextColumn Header="Max deliveries" Binding="{ReflectionBinding MaxDeliveriesText}" Width="135" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

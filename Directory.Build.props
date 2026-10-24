@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>0.6.0</Version>
+    <Product>QueueJanne</Product>
+    <Authors>QueueJanne contributors</Authors>
+  </PropertyGroup>
+</Project>

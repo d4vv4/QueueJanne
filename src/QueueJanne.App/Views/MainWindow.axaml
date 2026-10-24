@@ -1,0 +1,288 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:vm="using:QueueJanne.App.ViewModels"
+        xmlns:views="using:QueueJanne.App.Views"
+        x:Class="QueueJanne.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="QueueJanne"
+        Icon="/Assets/queuejanne.ico"
+        Width="1400" Height="860" MinWidth="900" MinHeight="560"
+        Background="{DynamicResource QjWindowBrush}"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.KeyBindings>
+    <KeyBinding Gesture="F5" Command="{Binding RefreshCommand}" />
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding AddConnectionCommand}" />
+    <KeyBinding Gesture="Ctrl+D" Command="{Binding OpenDeadLetterCommand}" />
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseSelectedTabCommand}" />
+    <KeyBinding Gesture="Ctrl+K" Command="{Binding GoToCommand}" />
+    <KeyBinding Gesture="Ctrl+P" Command="{Binding GoToCommand}" />
+    <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding Settings.ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+Add" Command="{Binding Settings.ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding Settings.ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding Settings.ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+D0" Command="{Binding Settings.ResetZoomCommand}" />
+  </Window.KeyBindings>
+
+  <LayoutTransformControl>
+    <LayoutTransformControl.LayoutTransform>
+      <ScaleTransform ScaleX="{Binding Settings.Zoom}" ScaleY="{Binding Settings.Zoom}" />
+    </LayoutTransformControl.LayoutTransform>
+  <DockPanel Background="{DynamicResource QjWindowBrush}">
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Add connection…" Command="{Binding AddConnectionCommand}" InputGesture="Ctrl+N" />
+        <MenuItem Header="Open _demo namespace" Command="{Binding AddDemoConnectionCommand}" />
+        <MenuItem Header="_Remove connection…" Command="{Binding RemoveConnectionCommand}" />
+        <Separator />
+        <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Queue">
+        <MenuItem Header="_Go to…" Command="{Binding GoToCommand}" InputGesture="Ctrl+K" />
+        <Separator />
+        <MenuItem Header="_Open messages" Command="{Binding OpenActiveCommand}" />
+        <MenuItem Header="Open _dead-letter queue" Command="{Binding OpenDeadLetterCommand}" InputGesture="Ctrl+D" />
+        <MenuItem Header="Open _transfer dead-letter queue" Command="{Binding OpenTransferDeadLetterCommand}" />
+        <Separator />
+        <MenuItem Header="_Copy name" Command="{Binding CopyEntityNameCommand}" />
+        <MenuItem Header="_Purge…" Command="{Binding PurgeSelectedNodeCommand}" />
+        <MenuItem Header="C_lose tab" Command="{Binding CloseSelectedTabCommand}" InputGesture="Ctrl+W" />
+      </MenuItem>
+      <MenuItem Header="_Message">
+        <MenuItem Header="_Resubmit selected…" Command="{Binding ResubmitSelectedCommand}" />
+        <MenuItem Header="Resubmit _all…" Command="{Binding ResubmitAllCommand}" />
+        <MenuItem Header="_Delete selected…" Command="{Binding DeleteSelectedCommand}" InputGesture="Delete" />
+        <Separator />
+        <MenuItem Header="_Send message…" Command="{Binding SendMessageCommand}" />
+        <MenuItem Header="Edit and re_send…" Command="{Binding EditAndResendCommand}" />
+        <MenuItem Header="Copy or _move to…" Command="{Binding CopyToCommand}" />
+        <Separator />
+        <MenuItem Header="Copy _body" Command="{Binding CopyBodyCommand}" />
+        <MenuItem Header="Copy message _ID" Command="{Binding CopyMessageIdCommand}" />
+        <MenuItem Header="Copy as _JSON" Command="{Binding CopyAsJsonCommand}" />
+        <Separator />
+        <MenuItem Header="_Export to file…" Command="{Binding ExportSelectedCommand}" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="Dead-letter _overview (all connections)" Command="{Binding ShowAllDeadLettersCommand}" />
+        <MenuItem Header="_Refresh" Command="{Binding RefreshCommand}" InputGesture="F5" />
+        <MenuItem Header="_Auto-refresh counts every 15 seconds" ToggleType="CheckBox" IsChecked="{Binding AutoRefresh}" />
+        <MenuItem Header="_Properties pane" ToggleType="CheckBox" IsChecked="{Binding Settings.ShowProperties}" />
+        <MenuItem Header="Operation _journal…" Command="{Binding OpenJournalCommand}"
+                  ToolTip.Tip="Every resubmit, delete, move and purge, with a backup of the messages, from the app and from Claude" />
+        <Separator />
+        <MenuItem Header="Zoom _in" Command="{Binding Settings.ZoomInCommand}" InputGesture="Ctrl+OemPlus" />
+        <MenuItem Header="Zoom _out" Command="{Binding Settings.ZoomOutCommand}" InputGesture="Ctrl+OemMinus" />
+        <MenuItem Header="Actual si_ze" Command="{Binding Settings.ResetZoomCommand}" InputGesture="Ctrl+D0" />
+        <Separator />
+        <MenuItem Header="_Theme">
+          <MenuItem Header="Follow system" Command="{Binding SetThemeCommand}" CommandParameter="System" />
+          <MenuItem Header="Light" Command="{Binding SetThemeCommand}" CommandParameter="Light" />
+          <MenuItem Header="Dark" Command="{Binding SetThemeCommand}" CommandParameter="Dark" />
+        </MenuItem>
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="_About QueueJanne" Command="{Binding AboutCommand}" />
+      </MenuItem>
+    </Menu>
+
+    <Border DockPanel.Dock="Top" Classes="toolbar">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button AutomationProperties.Name="Add connection" Classes="tool" Command="{Binding AddConnectionCommand}" ToolTip.Tip="Add a Service Bus namespace (Ctrl+N)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ServerPlus" Width="16" Height="16" />
+            <TextBlock Text="Add connection" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Refresh" Classes="tool" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh counts and the open tab (F5)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" Classes.spinning="{Binding IsRefreshing}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
+            <TextBlock Text="Refresh" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <ToggleButton AutomationProperties.Name="Auto-refresh" Classes="tool" IsChecked="{Binding AutoRefresh}" ToolTip.Tip="Refresh counts every 15 seconds">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Autorenew" Width="16" Height="16" Classes.spinning-slow="{Binding AutoRefresh}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
+            <TextBlock Text="Auto-refresh" VerticalAlignment="Center" />
+          </StackPanel>
+        </ToggleButton>
+        <Border Classes="divider" />
+        <Button AutomationProperties.Name="Overview" Classes="tool" Command="{Binding ShowAllDeadLettersCommand}" ToolTip.Tip="Every queue and subscription with dead letters, in every connection">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ViewDashboardOutline" Width="16" Height="16" />
+            <TextBlock Text="Overview" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Go to" Classes="tool" Command="{Binding GoToCommand}" ToolTip.Tip="Find and open any queue or subscription in any connection (Ctrl+K)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Magnify" Width="16" Height="16" />
+            <TextBlock Text="Go to…" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Messages" Classes="tool" Command="{Binding OpenActiveCommand}" ToolTip.Tip="Peek the selected queue or subscription (Enter)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EmailOutline" Width="16" Height="16" />
+            <TextBlock Text="Messages" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Dead letters" Classes="tool" Command="{Binding OpenDeadLetterCommand}" ToolTip.Tip="Peek its dead-letter queue (Ctrl+D)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EmailAlertOutline" Width="16" Height="16" />
+            <TextBlock Text="Dead letters" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Resubmit" Classes="tool" Command="{Binding ResubmitSelectedCommand}" ToolTip.Tip="Send the selected dead-lettered messages back to their queue or topic">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EmailArrowRightOutline" Width="16" Height="16" />
+            <TextBlock Text="Resubmit" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Border Classes="divider" />
+        <Button AutomationProperties.Name="Send message" Classes="tool" Command="{Binding SendMessageCommand}" ToolTip.Tip="Send a test message to the selected queue or topic">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="SendOutline" Width="16" Height="16" />
+            <TextBlock Text="Send" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Export" Classes="tool" Command="{Binding ExportSelectedCommand}" ToolTip.Tip="Save the selected messages (or all loaded ones) to a JSON file">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Export" Width="16" Height="16" />
+            <TextBlock Text="Export" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Classes="statusbar">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,14,0" IsVisible="{Binding AutoRefresh}" ToolTip.Tip="Counts refresh every 15 seconds">
+          <Ellipse Classes="live" Width="8" Height="8" Fill="#2EA043" VerticalAlignment="Center" />
+          <TextBlock Text="Live" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Grid.Column="2" Margin="16,0,0,0" Text="{Binding SelectedEntityTab.SelectionText, FallbackValue=''}" />
+        <TextBlock Grid.Column="3" Margin="16,0,0,0" Text="{Binding SelectedEntityTab.CountText, FallbackValue=''}" />
+        <TextBlock Grid.Column="4" Margin="16,0,0,0" Classes="muted" Text="{Binding SelectedEntityTab.LocationText, FallbackValue=''}" />
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="300,4,*">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panelHeader">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button AutomationProperties.Name="Add connection" Classes="icon" Command="{Binding AddConnectionCommand}" ToolTip.Tip="Add connection">
+                <mi:MaterialIcon Kind="Plus" />
+              </Button>
+              <Button AutomationProperties.Name="Refresh counts" Classes="icon" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh counts">
+                <mi:MaterialIcon Kind="Refresh" />
+              </Button>
+            </StackPanel>
+            <TextBlock Classes="title" Text="Servers" />
+          </DockPanel>
+        </Border>
+        <TextBox AutomationProperties.Name="Filter queues and subscriptions" DockPanel.Dock="Top" Margin="6" PlaceholderText="Filter queues and subscriptions" Text="{Binding TreeFilter}" />
+        <TreeView ItemsSource="{Binding Connections}"
+                  SelectedItem="{Binding SelectedNode}"
+                  DoubleTapped="OnTreeDoubleTapped"
+                  KeyDown="OnTreeKeyDown">
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem" x:DataType="vm:TreeNodeViewModel">
+              <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+              <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+            </Style>
+          </TreeView.Styles>
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate DataType="vm:TreeNodeViewModel" ItemsSource="{Binding VisibleChildren}">
+              <Border Classes="node" Classes.pulse="{Binding IsPulsing}" Classes.rising="{Binding IsRising}" Classes.falling="{Binding IsFalling}"
+                      Background="Transparent" Tapped="OnTreeRowTapped">
+              <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent" ToolTip.Tip="{Binding ToolTip}">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Classes.spinning="{Binding IsBusy}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CountText}" Classes="muted" VerticalAlignment="Center" />
+                <Border Classes="badge dead" IsVisible="{Binding HasDeadLetters}"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
+                  <TextBlock Text="{Binding DeadLetterText}" />
+                </Border>
+                <Border Classes="badge env"
+                        Classes.prod="{Binding IsProduction}"
+                        Classes.test="{Binding IsTest}"
+                        Classes.dev="{Binding IsDevelopment}"
+                        IsVisible="{Binding HasEnvironment}">
+                  <TextBlock Text="{Binding EnvironmentText}" />
+                </Border>
+                <mi:MaterialIcon Kind="LockOutline" Width="13" Height="13" IsVisible="{Binding IsReadOnly}" ToolTip.Tip="Read-only connection" />
+                <Button Classes="icon" Padding="2" IsVisible="{Binding IsConnection}" Click="OnConnectionOverviewClick"
+                        AutomationProperties.Name="Dead-letter overview" ToolTip.Tip="Dead-letter overview of this connection">
+                  <mi:MaterialIcon Kind="ViewDashboardOutline" Width="14" Height="14" />
+                </Button>
+              </StackPanel>
+              </Border>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+          <TreeView.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Open messages" Command="{Binding OpenActiveCommand}" />
+              <MenuItem Header="Open dead-letter queue" Command="{Binding OpenDeadLetterCommand}" />
+              <MenuItem Header="Open transfer dead-letter queue" Command="{Binding OpenTransferDeadLetterCommand}" />
+              <Separator />
+              <MenuItem Header="Copy name" Command="{Binding CopyEntityNameCommand}" />
+              <MenuItem Header="Refresh counts" Command="{Binding RefreshCommand}" />
+              <MenuItem Header="Send message…" Command="{Binding SendMessageCommand}" />
+              <MenuItem Header="Purge…" Command="{Binding PurgeSelectedNodeCommand}" />
+              <Separator />
+              <MenuItem Header="Read-only on/off…" Command="{Binding ToggleReadOnlyCommand}" />
+              <MenuItem Header="Remove connection…" Command="{Binding RemoveConnectionCommand}" />
+            </ContextMenu>
+          </TreeView.ContextMenu>
+        </TreeView>
+      </DockPanel>
+
+      <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="{DynamicResource QjBorderBrush}" />
+
+      <Panel Grid.Column="2">
+        <!-- The tab strip shows only headers. The selected document is shown below it by one ContentControl, which reuses
+             the same view when switching between tabs of the same kind instead of building a new one per tab. -->
+        <DockPanel IsVisible="{Binding HasTabs}">
+        <TabControl DockPanel.Dock="Top" Classes="documents" ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}">
+          <TabControl.ItemTemplate>
+            <DataTemplate DataType="vm:DocumentViewModel">
+              <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent" ToolTip.Tip="{Binding ToolTip}" DoubleTapped="OnTabHeaderDoubleTapped">
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="14" Height="14" />
+                <TextBlock Text="{Binding Header}" VerticalAlignment="Center" Classes.preview="{Binding IsPreview}" />
+                <Button AutomationProperties.Name="Close tab" Classes="tabClose" Command="{Binding CloseCommand}" ToolTip.Tip="Close (Ctrl+W)">
+                  <mi:MaterialIcon Kind="Close" Width="12" Height="12" />
+                </Button>
+              </StackPanel>
+            </DataTemplate>
+          </TabControl.ItemTemplate>
+          <TabControl.ContentTemplate>
+            <DataTemplate>
+              <Panel />
+            </DataTemplate>
+          </TabControl.ContentTemplate>
+        </TabControl>
+        <ContentControl Content="{Binding SelectedTab}">
+          <ContentControl.DataTemplates>
+            <DataTemplate DataType="vm:EntityTabViewModel">
+              <views:EntityTabView />
+            </DataTemplate>
+            <DataTemplate DataType="vm:OverviewViewModel">
+              <views:OverviewView />
+            </DataTemplate>
+          </ContentControl.DataTemplates>
+        </ContentControl>
+        </DockPanel>
+
+        <StackPanel IsVisible="{Binding !HasTabs}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+          <mi:MaterialIcon Kind="TrayFull" Width="40" Height="40" HorizontalAlignment="Center" Foreground="{DynamicResource QjMutedTextBrush}" />
+          <TextBlock Text="Open a queue or subscription" FontSize="16" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="Double-click it in the Servers panel, or select it and press Enter." HorizontalAlignment="Center" />
+          <Button Content="Open the demo namespace" Command="{Binding AddDemoConnectionCommand}" HorizontalAlignment="Center" Margin="0,10,0,0"
+                  IsVisible="{Binding !HasConnections}" />
+        </StackPanel>
+      </Panel>
+    </Grid>
+  </DockPanel>
+  </LayoutTransformControl>
+</Window>

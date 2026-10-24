@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:QueueJanne.App.ViewModels"
+             xmlns:views="using:QueueJanne.App.Views"
+             x:Class="QueueJanne.App.Views.EntityTabView"
+             x:DataType="vm:EntityTabViewModel">
+  <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,Auto,*,4,300">
+    <Border Classes="toolbar">
+      <DockPanel>
+        <WrapPanel Orientation="Horizontal" ItemSpacing="4" LineSpacing="2">
+          <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsActiveQueue}" Content="{Binding ActiveLabel}" />
+          <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsDeadLetterQueue}" Content="{Binding DeadLetterLabel}" />
+          <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsTransferDeadLetterQueue}" Content="{Binding TransferDeadLetterLabel}" IsVisible="{Binding ShowsTransferDeadLetter}"
+                        ToolTip.Tip="Messages Service Bus couldn't forward to another entity (auto-forwarding or send-via transactions)" />
+          <Border Classes="divider" />
+          <Button AutomationProperties.Name="Peek again" Classes="tool" Command="{Binding RefreshCommand}" ToolTip.Tip="Peek again">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+              <TextBlock Text="Refresh" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <ComboBox AutomationProperties.Name="How many messages" ItemsSource="{Binding TopOptions}" SelectedItem="{Binding Top}" MinWidth="120" FontSize="12" ToolTip.Tip="How many messages to peek" />
+          <Button AutomationProperties.Name="Columns" Classes="tool" Click="OnEditColumns" ToolTip.Tip="Choose, order and add columns, including application properties">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="ViewColumnOutline" Width="16" Height="16" />
+              <TextBlock Text="Columns" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Border Classes="divider" IsVisible="{Binding IsDeadLetterView}" />
+          <Button AutomationProperties.Name="Resubmit selected" Classes="tool" Command="{Binding ResubmitSelectedCommand}" IsVisible="{Binding IsDeadLetterView}"
+                  ToolTip.Tip="Send the selected messages back to their queue or topic">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="EmailArrowRightOutline" Width="16" Height="16" />
+              <TextBlock Text="Resubmit" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button AutomationProperties.Name="Resubmit all" Classes="tool" Command="{Binding ResubmitAllCommand}" IsVisible="{Binding IsDeadLetterView}"
+                  ToolTip.Tip="Send every message in this dead-letter queue back">
+            <TextBlock Text="Resubmit all…" VerticalAlignment="Center" />
+          </Button>
+          <Border Classes="divider" />
+          <Button AutomationProperties.Name="Delete selected" Classes="tool" Command="{Binding DeleteSelectedCommand}" ToolTip.Tip="Delete the selected messages (Delete)">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+              <TextBlock Text="Delete" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button AutomationProperties.Name="Purge" Classes="tool" Command="{Binding PurgeCommand}" ToolTip.Tip="Empty this queue or subscription">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="DeleteSweepOutline" Width="16" Height="16" />
+              <TextBlock Text="Purge…" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </WrapPanel>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Row="1" Classes="filterbar">
+      <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="4">
+        <mi:MaterialIcon Kind="FilterOutline" Width="16" Height="16" VerticalAlignment="Center" />
+        <TextBox x:Name="SearchBox" AutomationProperties.Name="Filter loaded messages" Width="170" PlaceholderText="Search loaded messages" Text="{Binding FilterText}"
+                 ToolTip.Tip="Matches IDs, subject, properties and body text of the loaded messages (Ctrl+F)" />
+        <AutoCompleteBox AutomationProperties.Name="Dead-letter reason filter" ToolTip.Tip="Matches part of the text, ignoring case. Put it in double quotes for an exact match." Width="150" PlaceholderText="Dead-letter reason" Text="{Binding ReasonFilter}" ItemsSource="{Binding ReasonSuggestions}" MinimumPrefixLength="0" FilterMode="ContainsOrdinal" />
+        <AutoCompleteBox AutomationProperties.Name="Subject filter" ToolTip.Tip="Matches part of the text, ignoring case. Put it in double quotes for an exact match." Width="120" PlaceholderText="Subject" Text="{Binding SubjectFilter}" ItemsSource="{Binding SubjectSuggestions}" MinimumPrefixLength="0" FilterMode="ContainsOrdinal" />
+        <AutoCompleteBox AutomationProperties.Name="Property filter" Width="100" PlaceholderText="Property" Text="{Binding PropertyNameFilter}" ItemsSource="{Binding ApplicationPropertyNames}" MinimumPrefixLength="0" FilterMode="ContainsOrdinal" />
+        <TextBlock Text="=" VerticalAlignment="Center" Classes="muted" />
+        <TextBox AutomationProperties.Name="Property value filter" ToolTip.Tip="Matches part of the text, ignoring case. Put it in double quotes for an exact match." Width="80" PlaceholderText="Value" Text="{Binding PropertyValueFilter}" />
+        <TextBox AutomationProperties.Name="Body contains filter" Width="110" PlaceholderText="Body contains" Text="{Binding BodyFilter}" />
+        <Button AutomationProperties.Name="Clear filters" Classes="tool" Command="{Binding ClearFiltersCommand}" ToolTip.Tip="Clear all filters">
+          <mi:MaterialIcon Kind="FilterRemoveOutline" Width="16" Height="16" />
+        </Button>
+        <Border Classes="divider" />
+        <TextBlock Text="Group by" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox AutomationProperties.Name="Group by" ItemsSource="{Binding GroupOptions}" SelectedItem="{Binding GroupBy}" MinWidth="140" FontSize="12" />
+        <AutoCompleteBox AutomationProperties.Name="Group property" Width="130" PlaceholderText="Property name" Text="{Binding GroupProperty}" ItemsSource="{Binding ApplicationPropertyNames}"
+                         MinimumPrefixLength="0" FilterMode="ContainsOrdinal" IsVisible="{Binding IsGroupingByProperty}" />
+        <Border Classes="divider" IsVisible="{Binding HasStructuredFilter}" />
+        <Button AutomationProperties.Name="Resubmit matching" Classes="tool" Command="{Binding ResubmitMatchingCommand}" ToolTip.Tip="Resubmit every message in this dead-letter queue that matches the filter, not only the loaded ones">
+          <Button.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="HasStructuredFilter" />
+              <Binding Path="IsDeadLetterView" />
+            </MultiBinding>
+          </Button.IsVisible>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="EmailArrowRightOutline" Width="16" Height="16" />
+            <TextBlock Text="Resubmit matching…" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button AutomationProperties.Name="Delete matching" Classes="tool" Command="{Binding DeleteMatchingCommand}" IsVisible="{Binding HasStructuredFilter}"
+                ToolTip.Tip="Delete every message in this sub-queue that matches the filter, not only the loaded ones">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+            <TextBlock Text="Delete matching…" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </WrapPanel>
+    </Border>
+
+    <Border Grid.Row="2" Classes="infobar">
+      <DockPanel>
+        <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="60" MinWidth="60" Margin="0,0,10,0" VerticalAlignment="Center" />
+        <TextBlock DockPanel.Dock="Left" Classes="muted" Text="{Binding ProgressText}" Margin="0,0,14,0" />
+        <TextBlock Classes="muted" Text="{Binding SettingsText}" ToolTip.Tip="{Binding SettingsText}" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+
+    <DataGrid x:Name="MessageGrid" Grid.Row="3"
+              ItemsSource="{Binding Messages}"
+              SelectedItem="{Binding SelectedMessage}"
+              SelectionMode="Extended"
+              IsReadOnly="True"
+              CanUserReorderColumns="True"
+              CanUserResizeColumns="True"
+              CanUserSortColumns="True"
+              SelectionChanged="OnSelectionChanged"
+
+              ColumnReordered="OnColumnReordered">
+      <DataGrid.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="Columns…" Click="OnEditColumns" />
+          <Separator />
+          <MenuItem Header="Resubmit selected…" Command="{Binding ResubmitSelectedCommand}" IsVisible="{Binding IsDeadLetterView}" />
+          <MenuItem Header="Resubmit all…" Command="{Binding ResubmitAllCommand}" IsVisible="{Binding IsDeadLetterView}" />
+          <Separator IsVisible="{Binding IsDeadLetterView}" />
+          <MenuItem Header="Edit and resend…" Command="{Binding EditAndResendCommand}" />
+          <MenuItem Header="Copy or move to…" Command="{Binding CopyToCommand}" />
+          <Separator />
+          <MenuItem Header="Delete selected…" Command="{Binding DeleteSelectedCommand}" InputGesture="Delete" />
+          <MenuItem Header="Purge…" Command="{Binding PurgeCommand}" />
+          <Separator />
+          <MenuItem Header="Copy body" Command="{Binding CopyBodyCommand}" />
+          <MenuItem Header="Copy message ID" Command="{Binding CopyMessageIdCommand}" />
+          <MenuItem Header="Copy as JSON" Command="{Binding CopyAsJsonCommand}" />
+          <Separator />
+          <MenuItem Header="Export to file…" Command="{Binding ExportSelectedCommand}" />
+          <MenuItem Header="Refresh" Command="{Binding RefreshCommand}" />
+        </ContextMenu>
+      </DataGrid.ContextMenu>
+    </DataGrid>
+
+    <TextBlock Grid.Row="3" Classes="muted" Text="{Binding EmptyText}" IsVisible="{Binding EmptyText, Converter={x:Static ObjectConverters.IsNotNull}}"
+               HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+
+    <GridSplitter x:Name="DetailsSplitter" Grid.Row="4" ResizeDirection="Rows" Background="{DynamicResource QjBorderBrush}" />
+
+    <Grid x:Name="DetailsGrid" Grid.Row="5" ColumnDefinitions="*,4,380">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="panelHeader">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+              <ToggleButton Classes="segment small" Content="Text" IsChecked="{Binding IsTextFormat}" />
+              <ToggleButton Classes="segment small" Content="JSON" IsChecked="{Binding IsJsonFormat}" />
+              <ToggleButton Classes="segment small" Content="XML" IsChecked="{Binding IsXmlFormat}" />
+              <ToggleButton Classes="segment small" Content="Hex" IsChecked="{Binding IsHexFormat}" />
+              <Button AutomationProperties.Name="Copy body" Classes="icon" Command="{Binding CopyBodyCommand}" ToolTip.Tip="Copy body" Margin="4,0,0,0">
+                <mi:MaterialIcon Kind="ContentCopy" />
+              </Button>
+              <ToggleButton Classes="segment small" Margin="6,0,0,0" Content="Properties"
+                            IsChecked="{Binding Settings.ShowProperties}" ToolTip.Tip="Show or hide the properties pane" />
+            </StackPanel>
+            <TextBlock Classes="title" Text="{Binding BodyTitle}" />
+          </DockPanel>
+        </Border>
+        <views:BodyViewer Text="{Binding BodyText}" Format="{Binding BodyFormat}" />
+      </DockPanel>
+
+      <GridSplitter x:Name="PropertiesSplitter" Grid.Column="1" ResizeDirection="Columns" Background="{DynamicResource QjBorderBrush}" />
+
+      <DockPanel x:Name="PropertiesPanel" Grid.Column="2">
+        <Border DockPanel.Dock="Top" Classes="panelHeader">
+          <DockPanel>
+            <Button AutomationProperties.Name="Close properties" DockPanel.Dock="Right" Classes="icon" Command="{Binding Settings.HidePropertiesCommand}" ToolTip.Tip="Close the properties pane">
+              <mi:MaterialIcon Kind="Close" />
+            </Button>
+            <TextBlock Classes="title" Text="Properties" />
+          </DockPanel>
+        </Border>
+        <DataGrid ItemsSource="{Binding Properties}" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Name" Binding="{ReflectionBinding Name}" Width="150" />
+            <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Value}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
+    </Grid>
+  </Grid>
+</UserControl>

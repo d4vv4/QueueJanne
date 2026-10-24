@@ -1,0 +1,56 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="QueueJanne.App.App"
+             Name="QueueJanne"
+             RequestedThemeVariant="Default">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="QjWindowBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="QjChromeBrush" Color="#F3F3F3" />
+          <SolidColorBrush x:Key="QjPanelHeaderBrush" Color="#EAEAEA" />
+          <SolidColorBrush x:Key="QjBorderBrush" Color="#D6D6D6" />
+          <SolidColorBrush x:Key="QjMutedTextBrush" Color="#6B6B6B" />
+          <SolidColorBrush x:Key="QjDeadBackgroundBrush" Color="#FDE7E9" />
+          <SolidColorBrush x:Key="QjDeadForegroundBrush" Color="#B3261E" />
+          <SolidColorBrush x:Key="QjEnvBackgroundBrush" Color="#E8E6E3" />
+          <SolidColorBrush x:Key="QjEnvForegroundBrush" Color="#484644" />
+          <SolidColorBrush x:Key="QjProdBackgroundBrush" Color="#FDE7E9" />
+          <SolidColorBrush x:Key="QjProdForegroundBrush" Color="#B3261E" />
+          <SolidColorBrush x:Key="QjTestBackgroundBrush" Color="#FFF1CC" />
+          <SolidColorBrush x:Key="QjTestForegroundBrush" Color="#7A4A00" />
+          <SolidColorBrush x:Key="QjDevBackgroundBrush" Color="#DFF3DD" />
+          <SolidColorBrush x:Key="QjDevForegroundBrush" Color="#0E6B0E" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="QjWindowBrush" Color="#1E1E1E" />
+          <SolidColorBrush x:Key="QjChromeBrush" Color="#2A2A2A" />
+          <SolidColorBrush x:Key="QjPanelHeaderBrush" Color="#323232" />
+          <SolidColorBrush x:Key="QjBorderBrush" Color="#3F3F3F" />
+          <SolidColorBrush x:Key="QjMutedTextBrush" Color="#A3A3A3" />
+          <SolidColorBrush x:Key="QjDeadBackgroundBrush" Color="#4A2426" />
+          <SolidColorBrush x:Key="QjDeadForegroundBrush" Color="#FF9AA2" />
+          <SolidColorBrush x:Key="QjEnvBackgroundBrush" Color="#3B3A39" />
+          <SolidColorBrush x:Key="QjEnvForegroundBrush" Color="#D2D0CE" />
+          <SolidColorBrush x:Key="QjProdBackgroundBrush" Color="#4A2426" />
+          <SolidColorBrush x:Key="QjProdForegroundBrush" Color="#FF9AA2" />
+          <SolidColorBrush x:Key="QjTestBackgroundBrush" Color="#45391A" />
+          <SolidColorBrush x:Key="QjTestForegroundBrush" Color="#F7D774" />
+          <SolidColorBrush x:Key="QjDevBackgroundBrush" Color="#233D22" />
+          <SolidColorBrush x:Key="QjDevForegroundBrush" Color="#8FD989" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact" />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    <materialIcons:MaterialIconStyles />
+    <StyleInclude Source="avares://QueueJanne/Styles/AppStyles.axaml" />
+  </Application.Styles>
+</Application>

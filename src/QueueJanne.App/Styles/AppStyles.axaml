@@ -1,0 +1,283 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+  <Style Selector="Border.toolbar">
+    <Setter Property="Background" Value="{DynamicResource QjChromeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource QjBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="6,3" />
+  </Style>
+
+  <Style Selector="Border.filterbar">
+    <Setter Property="BorderBrush" Value="{DynamicResource QjBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="Border.filterbar TextBox, Border.filterbar AutoCompleteBox">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="26" />
+  </Style>
+
+  <Style Selector="Border.infobar">
+    <Setter Property="BorderBrush" Value="{DynamicResource QjBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="10,3" />
+  </Style>
+  <Style Selector="Border.infobar TextBlock">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Border.statusbar">
+    <Setter Property="Background" Value="{DynamicResource QjChromeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource QjBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+  <Style Selector="Border.statusbar TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Border.panelHeader">
+    <Setter Property="Background" Value="{DynamicResource QjPanelHeaderBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource QjBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="MinHeight" Value="30" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource QjMutedTextBrush}" />
+  </Style>
+
+  <Style Selector="Border.divider">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Margin" Value="6,4" />
+    <Setter Property="Background" Value="{DynamicResource QjBorderBrush}" />
+  </Style>
+
+  <Style Selector="Button.tool, ToggleButton.tool">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="5" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+  </Style>
+  <Style Selector="Button.icon mi|MaterialIcon">
+    <Setter Property="Width" Value="15" />
+    <Setter Property="Height" Value="15" />
+  </Style>
+  <Style Selector="Button.tabClose">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Margin" Value="2,0,0,0" />
+  </Style>
+
+  <Style Selector="ToggleButton.segment">
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+  <Style Selector="ToggleButton.segment.small">
+    <Setter Property="Padding" Value="8,1" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="#C42B1C" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#A32417" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.danger:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#80C42B1C" />
+    <Setter Property="Foreground" Value="#DDFFFFFF" />
+  </Style>
+
+  <Style Selector="Border.badge">
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="5,0,5,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Border.badge.dead">
+    <Setter Property="Background" Value="{DynamicResource QjDeadBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.dead > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource QjDeadForegroundBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Border.badge.env">
+    <Setter Property="Background" Value="{DynamicResource QjEnvBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource QjEnvForegroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.prod">
+    <Setter Property="Background" Value="{DynamicResource QjProdBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.prod > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource QjProdForegroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.test">
+    <Setter Property="Background" Value="{DynamicResource QjTestBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.test > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource QjTestForegroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.dev">
+    <Setter Property="Background" Value="{DynamicResource QjDevBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.badge.env.dev > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource QjDevForegroundBrush}" />
+  </Style>
+
+  <!-- Life: rows flash when their counts change, badges pop, and busy icons spin. -->
+  <Style Selector="Border.node">
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="3,1" />
+    <Setter Property="Margin" Value="-3,0,0,0" />
+  </Style>
+  <Style Selector="Border.node.pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="Background" Value="#664A90E2" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Background" Value="#004A90E2" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.node.pulse.rising">
+    <Style.Animations>
+      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="Background" Value="#80F5A623" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Background" Value="#00F5A623" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.node.pulse.falling">
+    <Style.Animations>
+      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="Background" Value="#6634C759" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Background" Value="#0034C759" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.node.pulse Border.badge">
+    <Style.Animations>
+      <Animation Duration="0:0:0.45" Easing="BackEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /></KeyFrame>
+        <KeyFrame Cue="40%"><Setter Property="ScaleTransform.ScaleX" Value="1.35" /><Setter Property="ScaleTransform.ScaleY" Value="1.35" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="ToggleButton.segment.pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="30%"><Setter Property="Opacity" Value="0.45" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="mi|MaterialIcon.spinning">
+    <Style.Animations>
+      <Animation Duration="0:0:0.9" IterationCount="INFINITE">
+        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="mi|MaterialIcon.spinning-slow">
+    <Style.Animations>
+      <Animation Duration="0:0:3" IterationCount="INFINITE">
+        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Ellipse.live">
+    <Style.Animations>
+      <Animation Duration="0:0:1.6" IterationCount="INFINITE" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="TextBlock.change.rising">
+    <Setter Property="Foreground" Value="#D9822B" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.change.falling">
+    <Setter Property="Foreground" Value="#2EA043" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TreeViewItem">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+
+  <Style Selector="TabControl.documents">
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.preview">
+    <Setter Property="FontStyle" Value="Italic" />
+  </Style>
+  <Style Selector="TabControl.documents TabItem">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="10,2" />
+  </Style>
+
+  <Style Selector="DataGrid">
+    <Setter Property="RowHeight" Value="24" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="GridLinesVisibility" Value="None" />
+  </Style>
+  <Style Selector="DataGridColumnHeader">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+  <Style Selector="DataGridCell">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="22" />
+  </Style>
+  <Style Selector="DataGridCell TextBlock">
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="DataGridRowGroupHeader">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="IsItemCountVisible" Value="True" />
+    <Setter Property="IsPropertyNameVisible" Value="False" />
+  </Style>
+  <Style Selector="DataGridRowGroupHeader TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+</Styles>

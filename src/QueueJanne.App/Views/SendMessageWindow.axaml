@@ -1,0 +1,102 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:QueueJanne.App.ViewModels"
+        x:Class="QueueJanne.App.Views.SendMessageWindow"
+        x:DataType="vm:SendMessageViewModel"
+        Title="{Binding Title}"
+        Width="720"
+        SizeToContent="Height"
+        MaxHeight="900"
+        CanResize="False"
+        Background="{DynamicResource QjWindowBrush}"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="20" Spacing="12">
+    <TextBlock Text="{Binding TransferSummary}" IsVisible="{Binding IsTransfer}" TextWrapping="Wrap" />
+
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Connection" />
+        <ComboBox AutomationProperties.Name="Connection" ItemsSource="{Binding Connections}" SelectedItem="{Binding Connection}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ConnectionNodeViewModel">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="4">
+        <TextBlock Text="Queue or topic" />
+        <AutoCompleteBox AutomationProperties.Name="Queue or topic" Text="{Binding Target}" ItemsSource="{Binding Targets}"
+                         MinimumPrefixLength="0" FilterMode="ContainsOrdinal" PlaceholderText="Send to…" />
+      </StackPanel>
+    </Grid>
+    <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+               Text="Read-only connections aren't listed. Messages go to a queue or a topic; a topic's subscription rules decide which subscriptions get a copy." />
+
+    <StackPanel Spacing="12" IsVisible="{Binding IsCompose}">
+      <Grid ColumnDefinitions="*,12,*,12,*" RowDefinitions="Auto,Auto,8,Auto,Auto">
+        <TextBlock Text="Subject" />
+        <TextBox Grid.Row="1" AutomationProperties.Name="Subject" Text="{Binding Subject}" />
+        <TextBlock Grid.Column="2" Text="Content type" />
+        <TextBox Grid.Row="1" Grid.Column="2" AutomationProperties.Name="Content type" Text="{Binding ContentType}" />
+        <TextBlock Grid.Column="4" Text="Copies" />
+        <NumericUpDown Grid.Row="1" Grid.Column="4" AutomationProperties.Name="Copies" Value="{Binding Copies}" Minimum="1" Maximum="100" FormatString="0" />
+        <TextBlock Grid.Row="3" Text="Message ID" />
+        <TextBox Grid.Row="4" AutomationProperties.Name="Message ID" Text="{Binding MessageId}" PlaceholderText="Generated when empty" />
+        <TextBlock Grid.Row="3" Grid.Column="2" Text="Correlation ID" />
+        <TextBox Grid.Row="4" Grid.Column="2" AutomationProperties.Name="Correlation ID" Text="{Binding CorrelationId}" />
+        <TextBlock Grid.Row="3" Grid.Column="4" Text="Session ID" />
+        <TextBox Grid.Row="4" Grid.Column="4" AutomationProperties.Name="Session ID" Text="{Binding SessionId}" PlaceholderText="For session queues" />
+      </Grid>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Application properties" />
+        <TextBox AutomationProperties.Name="Application properties" Text="{Binding PropertiesText}" AcceptsReturn="True" Height="74"
+                 FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12"
+                 PlaceholderText="tenant = t-0001&#10;retry = 3" />
+        <TextBlock Classes="muted" FontSize="12" Text="One name = value per line. Numbers and true/false keep their type; put a value in quotes to send it as text." />
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Body" />
+        <TextBox AutomationProperties.Name="Body" Text="{Binding BodyText}" AcceptsReturn="True" AcceptsTab="True" Height="220"
+                 IsReadOnly="{Binding !IsBodyEditable}" TextWrapping="NoWrap"
+                 FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+        <TextBlock Classes="muted" FontSize="12" Text="{Binding BodyNote}" IsVisible="{Binding BodyNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Spacing="6" IsVisible="{Binding IsTransfer}">
+      <CheckBox IsChecked="{Binding Move}" Content="Move: delete the originals after the copies were sent" />
+      <CheckBox IsChecked="{Binding NewMessageId}" Content="Give each copy a new message ID (the old one is kept in the OriginalMessageId property)" />
+    </StackPanel>
+
+    <ItemsControl ItemsSource="{Binding Warnings}" IsVisible="{Binding HasWarnings}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Spacing="6" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <Border CornerRadius="4" Padding="10,8" Background="{DynamicResource QjTestBackgroundBrush}">
+            <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{DynamicResource QjTestForegroundBrush}" />
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <StackPanel Spacing="4" IsVisible="{Binding IsProductionTarget}">
+      <TextBlock Text="{Binding ConfirmHint}" TextWrapping="Wrap" Foreground="{DynamicResource QjTestForegroundBrush}" />
+      <TextBox AutomationProperties.Name="Confirm" Text="{Binding ConfirmText}" />
+    </StackPanel>
+
+    <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="{DynamicResource QjDeadForegroundBrush}"
+               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button AutomationProperties.Name="{Binding ActionLabel}" Content="{Binding ActionLabel}" Classes="accent" IsDefault="True" Click="OnSend" MinWidth="90" />
+      <Button Content="Cancel" IsCancel="True" Click="OnCancel" MinWidth="90" />
+    </StackPanel>
+  </StackPanel>
+</Window>

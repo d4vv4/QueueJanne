@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:QueueJanne.App.ViewModels"
+        x:Class="QueueJanne.App.Views.AddConnectionWindow"
+        x:DataType="vm:AddConnectionViewModel"
+        Title="Add connection"
+        Width="540"
+        SizeToContent="Height"
+        CanResize="False"
+        Background="{DynamicResource QjWindowBrush}"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="20" Spacing="14">
+    <TextBlock Text="Connect to a Service Bus namespace" FontSize="16" FontWeight="SemiBold" />
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Name" />
+      <TextBox Text="{Binding Name}" PlaceholderText="Orders (production)" />
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Text="Sign in with" />
+      <RadioButton GroupName="auth" IsChecked="{Binding UseEntraId}" Content="Microsoft Entra ID (your Azure sign-in)" />
+      <RadioButton GroupName="auth" IsChecked="{Binding UseConnectionString}" Content="Connection string (shared access key)" />
+    </StackPanel>
+
+    <StackPanel Spacing="4" IsVisible="{Binding UseEntraId}">
+      <TextBlock Text="Namespace" />
+      <TextBox Text="{Binding Namespace}" PlaceholderText="my-namespace or my-namespace.servicebus.windows.net" />
+      <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                 Text="Uses your Azure CLI or Visual Studio sign-in. Your account needs a Service Bus data role on the namespace; listing queues with counts needs Data Owner." />
+      <TextBlock Text="Tenant ID (optional)" Margin="0,6,0,0" />
+      <TextBox Text="{Binding TenantId}" PlaceholderText="Only if the namespace is in another Entra tenant than you're signed in to" />
+    </StackPanel>
+
+    <StackPanel Spacing="4" IsVisible="{Binding UseConnectionString}">
+      <TextBlock Text="Connection string" />
+      <TextBox Text="{Binding ConnectionString}" PasswordChar="●" PlaceholderText="Endpoint=sb://…;SharedAccessKeyName=…;SharedAccessKey=…" />
+      <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                 Text="Saved encrypted for your user account. It never leaves this machine." />
+    </StackPanel>
+
+    <Grid ColumnDefinitions="*,16,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Environment" />
+        <TextBox Text="{Binding Environment}" PlaceholderText="dev, test or prod" />
+      </StackPanel>
+      <CheckBox Grid.Column="2" VerticalAlignment="Bottom" IsChecked="{Binding ReadOnly}" Content="Read-only"
+                ToolTip.Tip="QueueJanne won't change messages on this connection. Turned on automatically for production." />
+    </Grid>
+
+    <CheckBox IsChecked="{Binding UseWebSockets}" Content="Use AMQP over WebSockets (port 443), for networks that block port 5671" />
+
+    <TextBlock Text="{Binding TestResult}" TextWrapping="Wrap" Foreground="{DynamicResource QjDevForegroundBrush}"
+               IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="{DynamicResource QjDeadForegroundBrush}"
+               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+    <DockPanel>
+      <Button DockPanel.Dock="Left" Content="Test connection" Command="{Binding TestCommand}" IsEnabled="{Binding !IsTesting}" />
+      <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="60" MinWidth="60" Margin="10,0" IsVisible="{Binding IsTesting}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Content="Save" Classes="accent" IsDefault="True" Click="OnSave" MinWidth="80" />
+        <Button Content="Cancel" IsCancel="True" Click="OnCancel" MinWidth="80" />
+      </StackPanel>
+    </DockPanel>
+  </StackPanel>
+</Window>
