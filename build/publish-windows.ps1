@@ -5,13 +5,19 @@
 param([switch]$Install, [string]$Version)
 
 $ErrorActionPreference = "Stop"
-if (Get-Process QueueJanne, queuejanne-mcp -ErrorAction SilentlyContinue) {
-    throw "Close QueueJanne first (and Claude Code sessions that use its MCP server), so the files can be replaced."
-}
-
 $root = Split-Path $PSScriptRoot -Parent
 $out = Join-Path $root "artifacts\win-x64"
-$versionArgs = if ($Version) { @("-p:Version=$Version") } else { @() }
+$installFolder = Join-Path $env:LOCALAPPDATA "Programs\QueueJanne"
+
+# Only copies running from the folders this script writes to are in the way.
+$blocking = Get-Process QueueJanne, queuejanne-mcp -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and ($_.Path.StartsWith($out, "OrdinalIgnoreCase") -or ($Install -and $_.Path.StartsWith($installFolder, "OrdinalIgnoreCase"))) }
+if ($blocking) {
+    throw "Close QueueJanne first (and Claude Code sessions that use its MCP server), so the files can be replaced: $(($blocking.Path | Sort-Object -Unique) -join ', ')"
+}
+
+$versionArgs = @()
+if ($Version) { $versionArgs += "-p:Version=$Version" }
 
 dotnet publish (Join-Path $root "src\QueueJanne.App") -c Release -r win-x64 --self-contained `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -o $out @versionArgs
@@ -23,7 +29,7 @@ if ($LASTEXITCODE -ne 0) { throw "Building the MCP server failed." }
 $app = Join-Path $out "QueueJanne.exe"
 $mcp = Join-Path $out "queuejanne-mcp.exe"
 if ($Install) {
-    $target = Join-Path $env:LOCALAPPDATA "Programs\QueueJanne"
+    $target = $installFolder
     New-Item -ItemType Directory -Force $target | Out-Null
     Copy-Item $app, $mcp $target -Force
     $app = Join-Path $target "QueueJanne.exe"
