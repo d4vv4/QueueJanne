@@ -26,6 +26,15 @@ public class DialogModelTests
     }
 
     [Fact]
+    public void Release_notes_are_shown_as_plain_text()
+    {
+        const string notes = "## What's Changed\r\n* Faster tabs by **d4vv4**\r\n\r\n**Full Changelog**: https://github.com/owner/QueueJanne/compare/v0.6.2...v0.6.3";
+
+        Assert.Equal("• Faster tabs by d4vv4", UpdateViewModel.Shorten(notes));
+        Assert.Equal(string.Empty, UpdateViewModel.Shorten("**Full Changelog**: https://example.test"));
+    }
+
+    [Fact]
     public void Palette_puts_names_that_start_with_the_query_first_and_needs_every_word()
     {
         PaletteItem Item(string title, long deadLetters = 0) => new(title, string.Empty, "Demo " + title, deadLetters, () => { });

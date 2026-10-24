@@ -22,6 +22,16 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
     [ObservableProperty]
     private bool _isBusy;
 
+    /// <summary>Download progress, 0 to 100, shown in the status bar while an update installs.</summary>
+    [ObservableProperty]
+    private double _progress;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInstalling))]
+    private string? _progressText;
+
+    public bool IsInstalling => ProgressText is not null;
+
     public static Version CurrentVersion { get; } =
         UpdateChecker.Normalize(typeof(UpdateViewModel).Assembly.GetName().Version ?? new Version(0, 0, 0));
 
@@ -103,7 +113,8 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
             return;
         }
 
-        var notes = string.IsNullOrWhiteSpace(update.Notes) ? string.Empty : "\n\nWhat's new:\n" + Shorten(update.Notes);
+        var shortNotes = Shorten(update.Notes);
+        var notes = shortNotes.Length == 0 ? string.Empty : "\n\nWhat's new:\n" + shortNotes;
         if (!await dialogs.ConfirmAsync(
                 "Install update",
                 $"Install QueueJanne {update.Version}? You have {CurrentVersion}. QueueJanne downloads it ({Formatting.Bytes(update.Size)}), replaces the program in {location} and restarts. Your connections and settings stay as they are.{notes}"))
@@ -112,28 +123,47 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
         }
 
         IsBusy = true;
+        var step = "download it";
         try
         {
-            var zip = await UpdateInstaller.DownloadAsync(Http, update, new Progress<double>(done => report($"Downloading QueueJanne {update.Version}… {done:P0}")));
+            Progress = 0;
+            ProgressText = $"Downloading {update.Version}…";
+            var zip = await UpdateInstaller.DownloadAsync(Http, update, new Progress<double>(done =>
+            {
+                Progress = done * 100;
+                ProgressText = $"Downloading {update.Version}… {done:P0}";
+                report($"Downloading QueueJanne {update.Version}: {Formatting.Bytes((long)(done * update.Size))} of {Formatting.Bytes(update.Size)}");
+            }));
+
+            step = "prepare the restart";
+            var restart = PrepareRestart(location);
+
+            step = "replace the program files";
+            Progress = 100;
+            ProgressText = "Installing…";
             report("Installing the update…");
             await Task.Run(() => UpdateInstaller.Install(zip, location));
-            File.Delete(zip);
+            TryDelete(zip);
+
+            step = "restart QueueJanne";
+            ProgressText = "Restarting…";
             report($"Installed {update.Version}. Restarting…");
-            Restart(location);
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
-        {
-            report("Couldn't install the update");
-            await dialogs.ShowMessageAsync("Install update", $"Couldn't replace the files in {location}: {ex.Message}\n\nYou can download {update.Version} from {update.PageUrl}.");
+            Process.Start(restart);
+            exit();
         }
         catch (Exception ex)
         {
+            UiLagMonitor.Note($"update failed while trying to {step}: {ex}");
             report("Couldn't install the update");
-            await dialogs.ShowMessageAsync("Install update", ex is InvalidDataException ? ex.Message : "The download failed: " + ConnectionErrors.Explain(ex));
+            var detail = ex is InvalidDataException ? ex.Message : $"{ex.GetType().Name}: {(string.IsNullOrWhiteSpace(ex.Message) ? "no details" : ex.Message)}";
+            await dialogs.ShowMessageAsync(
+                "Install update",
+                $"Couldn't {step}. {detail}\n\nYou can download {update.Version} yourself from {update.PageUrl}.");
         }
         finally
         {
             IsBusy = false;
+            ProgressText = null;
         }
     }
 
@@ -143,13 +173,37 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
         return latest is not null && latest.Version > CurrentVersion ? latest : null;
     }
 
-    private void Restart(string location)
+    /// <summary>
+    /// QueueJanne is one file that .NET reads parts of only when they're first used. Once the update has replaced that
+    /// file, this process can't load anything it hasn't used yet, so starting a process is tried out first, while the
+    /// old file is still in place.
+    /// </summary>
+    private static ProcessStartInfo PrepareRestart(string location)
     {
-        var program = location.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
+        var probe = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("cmd.exe", ["/c", "exit"])
+            : new ProcessStartInfo("/usr/bin/true");
+        probe.CreateNoWindow = true;
+        probe.UseShellExecute = false;
+        using (var started = Process.Start(probe))
+        {
+            started?.WaitForExit();
+        }
+
+        return location.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
             ? new ProcessStartInfo("open", ["-n", location])
             : new ProcessStartInfo(Path.Combine(location, Path.GetFileName(Environment.ProcessPath!)));
-        Process.Start(program);
-        exit();
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     private static void OpenPage(string url)
@@ -160,9 +214,15 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
         }
     }
 
-    private static string Shorten(string notes)
+    /// <summary>The first lines of GitHub's release notes as plain text, without Markdown marks or the changelog link.</summary>
+    internal static string Shorten(string notes)
     {
-        var lines = notes.Replace("\r", string.Empty, StringComparison.Ordinal).Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Take(8).ToList();
+        var lines = notes.Replace("\r", string.Empty, StringComparison.Ordinal).Split('\n')
+            .Select(l => l.Trim().TrimStart('#').Trim().Replace("**", string.Empty, StringComparison.Ordinal))
+            .Where(l => l.Length > 0 && !l.StartsWith("Full Changelog", StringComparison.OrdinalIgnoreCase) && !l.Equals("What's Changed", StringComparison.OrdinalIgnoreCase))
+            .Select(l => l.StartsWith("* ", StringComparison.Ordinal) ? "• " + l[2..] : l)
+            .Take(8)
+            .ToList();
         return string.Join('\n', lines);
     }
 }

@@ -10,6 +10,7 @@ See README.md for what this repo does, how to install it and its projects. docs/
 - Packages: `build/publish-windows.ps1` (Windows) and `build/publish-macos.sh` (run on a Mac). Publishing fails while QueueJanne or its MCP server is running, because the exe is locked.
 - Base branch: `main`. Every push to `main` publishes a GitHub Release `v{major}.{minor}.{run number}` (major and minor from `Directory.Build.props`), which the app's Check for updates installs. So pushing to `main` ships to everyone who has auto-update on: only push what's tested.
 - Updates: `UpdateChecker` reads the latest release of the `UpdateRepository` in `Directory.Build.props`; `UpdateInstaller` renames the running files aside (`*.old-*`, removed at next start) and moves the new ones in. Development builds (a folder with `QueueJanne.dll`) don't update themselves.
+- Single-file builds load assemblies from their exe lazily. After an update has replaced the exe, a still-running copy can't load anything new (FileNotFoundException). So `UpdateViewModel` tries out starting a process before swapping, and the MCP server loads all its assemblies at startup. Test updater changes end to end: publish an older version into a temp folder, start it with the UI driver (`Start-QJ -Exe`), and install the latest release.
 
 ## Rules
 - The tool is generic. Never design around how one team configures Service Bus. Read entity settings (max delivery count, sessions, duplicate detection, forwarding) live and adapt.

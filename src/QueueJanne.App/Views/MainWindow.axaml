@@ -159,9 +159,23 @@
 
     <Border DockPanel.Dock="Bottom" Classes="statusbar">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-        <Button Grid.Column="5" Classes="update" Margin="16,0,0,0" Padding="8,1" FontSize="12"
-                Content="{Binding Updates.UpdateText}" Command="{Binding Updates.InstallCommand}" IsVisible="{Binding Updates.HasUpdate}"
-                AutomationProperties.Name="Install update" ToolTip.Tip="A newer QueueJanne is available. Click to install it and restart." />
+        <Panel Grid.Column="5" Margin="16,0,0,0">
+          <Button Classes="update" Padding="8,1" FontSize="12"
+                  Content="{Binding Updates.UpdateText}" Command="{Binding Updates.InstallCommand}"
+                  AutomationProperties.Name="Install update" ToolTip.Tip="A newer QueueJanne is available. Click to install it and restart.">
+            <Button.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="Updates.HasUpdate" />
+                <Binding Path="!Updates.IsInstalling" />
+              </MultiBinding>
+            </Button.IsVisible>
+          </Button>
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Updates.IsInstalling}" VerticalAlignment="Center">
+            <ProgressBar Width="140" MinWidth="140" Height="6" MinHeight="6" Minimum="0" Maximum="100" Value="{Binding Updates.Progress}"
+                         VerticalAlignment="Center" Foreground="#2EA043" />
+            <TextBlock Text="{Binding Updates.ProgressText}" VerticalAlignment="Center" AutomationProperties.Name="Update progress" />
+          </StackPanel>
+        </Panel>
         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,14,0" IsVisible="{Binding AutoRefresh}" ToolTip.Tip="Counts refresh every 15 seconds">
           <Ellipse Classes="live" Width="8" Height="8" Fill="#2EA043" VerticalAlignment="Center" />
           <TextBlock Text="Live" />
