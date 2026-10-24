@@ -28,9 +28,9 @@ public sealed partial class ViewSettings : ObservableObject
     [ObservableProperty]
     private double _zoom = 1;
 
-    /// <summary>Whether the app looks for a newer release when it starts.</summary>
+    /// <summary>Whether the app looks for a newer release when it starts and every few hours while it runs.</summary>
     [ObservableProperty]
-    private bool _checkForUpdatesAtStartup = true;
+    private bool _checkForUpdatesAutomatically = true;
 
     public ViewSettings()
     {
@@ -64,7 +64,7 @@ public sealed partial class ViewSettings : ObservableObject
 
     partial void OnZoomChanged(double value) => Save();
 
-    partial void OnCheckForUpdatesAtStartupChanged(bool value) => Save();
+    partial void OnCheckForUpdatesAutomaticallyChanged(bool value) => Save();
 
     [RelayCommand]
     private void ZoomIn() => Zoom = Math.Min(Math.Round(Zoom + 0.1, 1), MaxZoom);
@@ -90,7 +90,7 @@ public sealed partial class ViewSettings : ObservableObject
                 settings.DetailsHeight = Math.Clamp(stored.DetailsHeight, 100, 2000);
                 settings.Columns = ColumnCatalog.Normalize(stored.Columns);
                 settings.Zoom = Math.Clamp(stored.Zoom, MinZoom, MaxZoom);
-                settings.CheckForUpdatesAtStartup = stored.CheckForUpdatesAtStartup;
+                settings.CheckForUpdatesAutomatically = stored.CheckForUpdatesAutomatically;
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -104,7 +104,7 @@ public sealed partial class ViewSettings : ObservableObject
             DetailsHeight = settings.DetailsHeight,
             Columns = settings.Columns,
             Zoom = settings.Zoom,
-            CheckForUpdatesAtStartup = settings.CheckForUpdatesAtStartup,
+            CheckForUpdatesAutomatically = settings.CheckForUpdatesAutomatically,
         };
     }
 
@@ -118,12 +118,12 @@ public sealed partial class ViewSettings : ObservableObject
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(new Stored(ShowProperties, PropertiesWidth, DetailsHeight, Columns.ToList(), Zoom, CheckForUpdatesAtStartup), JsonOptions));
+            File.WriteAllText(_path, JsonSerializer.Serialize(new Stored(ShowProperties, PropertiesWidth, DetailsHeight, Columns.ToList(), Zoom, CheckForUpdatesAutomatically), JsonOptions));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }
 
-    private sealed record Stored(bool ShowProperties, double PropertiesWidth, double DetailsHeight, List<ColumnSetting>? Columns, double Zoom = 1, bool CheckForUpdatesAtStartup = true);
+    private sealed record Stored(bool ShowProperties, double PropertiesWidth, double DetailsHeight, List<ColumnSetting>? Columns, double Zoom = 1, bool CheckForUpdatesAutomatically = true);
 }

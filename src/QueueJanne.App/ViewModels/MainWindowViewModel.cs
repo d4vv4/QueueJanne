@@ -54,7 +54,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Dispatcher.UIThread.Post(() => nodes.ForEach(n => _ = n.LoadAsync()), DispatcherPriority.Background);
 
         Updates = new UpdateViewModel(dialogs, text => StatusText = text, () => ExitCommand.Execute(null));
-        Dispatcher.UIThread.Post(() => _ = Updates.CheckQuietlyAsync(), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(Updates.StartChecking, DispatcherPriority.Background);
 
         if (Connections.Count > 0)
         {

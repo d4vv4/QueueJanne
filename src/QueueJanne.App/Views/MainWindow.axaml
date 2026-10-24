@@ -84,7 +84,7 @@
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Check for _updates…" Command="{Binding Updates.CheckCommand}" />
-        <MenuItem Header="Check for updates at _startup" ToggleType="CheckBox" IsChecked="{Binding Settings.CheckForUpdatesAtStartup}" />
+        <MenuItem Header="Check for updates _automatically" ToggleType="CheckBox" IsChecked="{Binding Settings.CheckForUpdatesAutomatically}" />
         <Separator />
         <MenuItem Header="_About QueueJanne" Command="{Binding AboutCommand}" />
       </MenuItem>

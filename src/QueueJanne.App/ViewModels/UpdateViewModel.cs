@@ -39,10 +39,24 @@ public sealed partial class UpdateViewModel(IDialogService dialogs, Action<strin
 
     public string UpdateText => Available is { } update ? $"Update to {update.Version}" : string.Empty;
 
-    /// <summary>Runs once after startup when it's switched on; quiet unless it finds a newer version.</summary>
+    // GitHub's API allows 60 requests an hour per internet address without signing in, shared by everyone in an office.
+    // Every four hours stays far below that, even with many copies of QueueJanne open.
+    public static readonly TimeSpan CheckInterval = TimeSpan.FromHours(4);
+
+    private Avalonia.Threading.DispatcherTimer? _timer;
+
+    /// <summary>Checks now and then every <see cref="CheckInterval"/> while the app runs, when automatic checks are on.</summary>
+    public void StartChecking()
+    {
+        _timer ??= new Avalonia.Threading.DispatcherTimer(CheckInterval, Avalonia.Threading.DispatcherPriority.Background, async (_, _) => await CheckQuietlyAsync());
+        _timer.Start();
+        _ = CheckQuietlyAsync();
+    }
+
+    /// <summary>Quiet unless it finds a newer version; then the status bar offers it.</summary>
     public async Task CheckQuietlyAsync()
     {
-        if (!ViewSettings.Current.CheckForUpdatesAtStartup || UpdateChecker.DefaultRepository is null || UpdateInstaller.InstalledLocation() is null)
+        if (IsBusy || !ViewSettings.Current.CheckForUpdatesAutomatically || UpdateChecker.DefaultRepository is null || UpdateInstaller.InstalledLocation() is null)
         {
             return;
         }

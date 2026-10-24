@@ -18,7 +18,7 @@ Every push to `main` is built and tested by GitHub Actions (`.github/workflows/b
 
 ### Updates
 
-QueueJanne looks for a newer release when it starts, and a green **Update to …** button appears in the status bar when there is one. **Help → Check for updates…** checks right away. Installing downloads the release, checks it against its published SHA-256 checksum, puts it in place of the program files (including the MCP server next to it) and restarts. Connections and settings in `~/.queuejanne` aren't touched. Turn off the check at startup under **Help → Check for updates at startup**.
+QueueJanne looks for a newer release when it starts and every 4 hours while it runs, and a green **Update to …** button appears in the status bar when there is one. **Help → Check for updates…** checks right away. Installing downloads the release, checks it against its published SHA-256 checksum, puts it in place of the program files (including the MCP server next to it) and restarts. Connections and settings in `~/.queuejanne` aren't touched. Turn off the automatic check under **Help → Check for updates automatically**.
 
 The first start after an update takes a little longer while Windows scans the new exe. A running MCP server keeps the old version until its Claude session restarts.
 
