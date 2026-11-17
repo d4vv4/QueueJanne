@@ -44,7 +44,7 @@ internal static class EntityOperations
             return null;
         }
 
-        return await RunAsync(connection, dialogs, "Resubmit", progress, "Resubmitting", rows?.Select(r => r.SequenceNumber).ToList(), async reporter =>
+        return await RunAsync(connection, entity.Path, dialogs, "Resubmit", progress, "Resubmitting", rows?.Select(r => r.SequenceNumber).ToList(), async reporter =>
         {
             var request = new ResubmitRequest
             {
@@ -86,7 +86,7 @@ internal static class EntityOperations
             return null;
         }
 
-        return await RunAsync(connection, dialogs, "Delete", progress, "Deleting", rows.Select(r => r.SequenceNumber).ToList(), async reporter =>
+        return await RunAsync(connection, entity.Path, dialogs, "Delete", progress, "Deleting", rows.Select(r => r.SequenceNumber).ToList(), async reporter =>
         {
             var request = new DeleteRequest
             {
@@ -134,7 +134,7 @@ internal static class EntityOperations
             return null;
         }
 
-        return await RunAsync(connection, dialogs, "Purge", progress, "Purging", null, async reporter =>
+        return await RunAsync(connection, entity.Path, dialogs, "Purge", progress, "Purging", null, async reporter =>
         {
             var parts = new List<string>();
             var errors = new List<string>();
@@ -160,6 +160,7 @@ internal static class EntityOperations
 
     private static async Task<OperationOutcome> RunAsync(
         ConnectionNodeViewModel connection,
+        string entityPath,
         IDialogService dialogs,
         string operation,
         IProgress<string> progress,
@@ -167,10 +168,21 @@ internal static class EntityOperations
         IReadOnlyList<long>? sequenceNumbers,
         Func<IProgress<int>, Task<(string Summary, IReadOnlyList<string> Errors)>> run)
     {
-        progress.Report($"{verb}…");
+        var node = connection.FindEntity(entityPath);
+        var finished = false;
+        void Report(string text)
+        {
+            if (!finished)
+            {
+                progress.Report(text);
+                node?.OperationText = text;
+            }
+        }
+
+        Report($"{verb}…");
         try
         {
-            var (summary, errors) = await run(new Progress<int>(done => progress.Report($"{verb}… {Formatting.Count(done)} done")));
+            var (summary, errors) = await run(new Progress<int>(done => Report($"{verb}… {Formatting.Count(done)} done")));
             if (errors.Count > 0)
             {
                 await dialogs.ShowMessageAsync($"{operation} didn't finish", summary + ".\n\n" + string.Join("\n", errors.Take(10)));
@@ -185,7 +197,9 @@ internal static class EntityOperations
         }
         finally
         {
-            await connection.LoadAsync();
+            finished = true;
+            node?.OperationText = null;
+            _ = connection.LoadAsync();
         }
     }
 
@@ -206,7 +220,7 @@ internal static class EntityOperations
         }
         finally
         {
-            await connection.LoadAsync();
+            _ = connection.LoadAsync();
         }
     }
 
@@ -222,7 +236,7 @@ internal static class EntityOperations
         var move = dialog.Move;
         try
         {
-            return await RunAsync(source, dialogs, move ? "Move" : "Copy", progress, move ? "Moving" : "Copying", move ? numbers : [], async _ =>
+            return await RunAsync(source, address.EntityPath, dialogs, move ? "Move" : "Copy", progress, move ? "Moving" : "Copying", move ? numbers : [], async _ =>
             {
                 Task<TransferResult> Run() => MessageTransfer.CopyAsync(source.Client, address, numbers, targetConnection.Client, target, move, dialog.NewMessageId);
                 var result = move
@@ -235,7 +249,7 @@ internal static class EntityOperations
         {
             if (targetConnection != source)
             {
-                await targetConnection.LoadAsync();
+                _ = targetConnection.LoadAsync();
             }
         }
 

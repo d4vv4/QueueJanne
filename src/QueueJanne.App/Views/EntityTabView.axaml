@@ -9,7 +9,7 @@
     <Border Classes="toolbar">
       <DockPanel>
         <WrapPanel Orientation="Horizontal" ItemSpacing="4" LineSpacing="2">
-          <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsActiveQueue}" Content="{Binding ActiveLabel}" />
+          <ToggleButton Classes="segment" Classes.pulse="{Binding IsActivePulsing}" IsChecked="{Binding IsActiveQueue}" Content="{Binding ActiveLabel}" />
           <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsDeadLetterQueue}" Content="{Binding DeadLetterLabel}" />
           <ToggleButton Classes="segment" Classes.pulse="{Binding IsCountsPulsing}" IsChecked="{Binding IsTransferDeadLetterQueue}" Content="{Binding TransferDeadLetterLabel}" IsVisible="{Binding ShowsTransferDeadLetter}"
                         ToolTip.Tip="Messages Service Bus couldn't forward to another entity (auto-forwarding or send-via transactions)" />

@@ -491,11 +491,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         foreach (var tab in EntityTabs.Where(t => t.Connection == entity.Connection && t.Entity.Path == entity.Entity.Path).ToList())
         {
-            if (entity.Connection.FindEntity(tab.Entity.Path) is { } node)
-            {
-                tab.UpdateEntity(node.Entity);
-            }
-
             _ = tab.LoadAsync();
         }
 
@@ -580,7 +575,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         var node = new ConnectionNodeViewModel(profile, () => NamespaceClientFactory.Create(profile, _store));
         node.SetFilter(TreeFilter);
-        node.Loaded += (_, _) => RefreshOverviews();
+        node.Loaded += (_, _) =>
+        {
+            RefreshOverviews();
+            UpdateTabs();
+        };
         Connections.Add(node);
         return node;
     }
@@ -608,7 +607,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
             IsRefreshing = false;
         }
 
-        UpdateTabs();
         var failed = Connections.FirstOrDefault(c => c.Error is not null);
         StatusText = failed is null
             ? $"Counts refreshed at {DateTime.Now:HH:mm:ss}."

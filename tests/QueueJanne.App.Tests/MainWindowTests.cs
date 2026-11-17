@@ -69,11 +69,40 @@ public class MainWindowTests
         Assert.Equal(40, tab.Messages.Count);
         Assert.Equal(rows[4].SequenceNumber, tab.SelectedMessage!.SequenceNumber);
         Assert.Equal("Deleted 1", tab.ProgressText);
-        Assert.Contains("Dead-letter (40)", tab.DeadLetterLabel);
+        await WaitUntil(() => tab.DeadLetterLabel.Contains("Dead-letter (40)"), "the counts have refreshed");
+        var node = viewModel.Connections[0].FindEntity("notifications")!;
+        Assert.Null(node.OperationText);
+        Assert.True(node.IsFalling);
         var journal = Directory.GetFiles(Path.Combine(Home, "journal"), "*delete-notifications*", SearchOption.AllDirectories)
             .Select(OperationJournal.Load)
             .Single(e => e.Messages.Any(m => m.SequenceNumber == rows[3].SequenceNumber));
         Assert.Equal("Deleted 1", journal.Outcome);
+        window.Close();
+    });
+
+    [Fact]
+    public Task A_new_active_count_flashes_the_number_but_not_the_row() => Run(async () =>
+    {
+        var (window, viewModel, _) = await OpenDemoAsync();
+        var connection = viewModel.Connections[0];
+        var orders = connection.FindEntity("orders")!;
+        var before = orders.ActiveCount;
+
+        await connection.Client.SendAsync("orders", [new OutgoingMessage { Body = [1] }]);
+        await connection.LoadAsync();
+
+        Assert.Equal(before + 1, orders.ActiveCount);
+        await WaitUntil(() => orders.IsActivePulsing, "the active count flashes");
+        Assert.False(orders.IsPulsing);
+
+        var topic = connection.FindEntity("billing-events")!;
+        var topicBefore = topic.ActiveCount;
+        await connection.Client.SendAsync("billing-events", [new OutgoingMessage { Body = [1] }]);
+        await connection.LoadAsync();
+
+        Assert.True(topic.ActiveCount > topicBefore);
+        Assert.Equal(topic.Children.OfType<EntityNodeViewModel>().Sum(c => c.ActiveCount), topic.ActiveCount);
+        await WaitUntil(() => topic.IsActivePulsing, "the topic's total flashes");
         window.Close();
     });
 

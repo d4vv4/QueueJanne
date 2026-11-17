@@ -219,13 +219,18 @@
             <TreeDataTemplate DataType="vm:TreeNodeViewModel" ItemsSource="{Binding VisibleChildren}">
               <Border Classes="node" Classes.pulse="{Binding IsPulsing}" Classes.rising="{Binding IsRising}" Classes.falling="{Binding IsFalling}"
                       Background="Transparent" Tapped="OnTreeRowTapped">
+              <StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent" ToolTip.Tip="{Binding ToolTip}">
                 <Ellipse Classes="state" Width="8" Height="8" VerticalAlignment="Center" IsVisible="{Binding IsConnection}"
                          Classes.connected="{Binding IsStateConnected}" Classes.connecting="{Binding IsStateConnecting}" Classes.failed="{Binding IsStateFailed}"
                          ToolTip.Tip="{Binding StateText}" />
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Classes.spinning="{Binding IsBusy}"><mi:MaterialIcon.RenderTransform><RotateTransform /></mi:MaterialIcon.RenderTransform></mi:MaterialIcon>
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding CountText}" Classes="muted" VerticalAlignment="Center" />
+                <Border Classes="badge active" Classes.pulse="{Binding IsActivePulsing}" IsVisible="{Binding HasActive}"
+                        ToolTip.Tip="Active messages"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
+                  <TextBlock Text="{Binding ActiveText}" />
+                </Border>
                 <Border Classes="badge dead" IsVisible="{Binding HasDeadLetters}"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
                   <TextBlock Text="{Binding DeadLetterText}" />
                 </Border>
@@ -241,6 +246,11 @@
                         AutomationProperties.Name="Dead-letter overview" ToolTip.Tip="Dead-letter overview of this connection">
                   <mi:MaterialIcon Kind="ViewDashboardOutline" Width="14" Height="14" />
                 </Button>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="22,2,0,2" IsVisible="{Binding OperationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <ProgressBar IsIndeterminate="True" Width="40" MinWidth="40" VerticalAlignment="Center" />
+                <TextBlock FontWeight="SemiBold" Text="{Binding OperationText}" VerticalAlignment="Center" />
+              </StackPanel>
               </StackPanel>
               </Border>
             </TreeDataTemplate>

@@ -64,7 +64,7 @@
 - **Warnings worked out from each entity's live settings** (max delivery count, lock duration, duplicate detection, topic fan-out) before anything changes.
 - **Plain-language connection errors**, for example a missing role, the wrong tenant or no sign-in.
 - **An operation journal** with a backup of every message before it's resubmitted, deleted, moved or purged.
-- **A live feel**: changed counts pulse, a "Live" indicator shows auto-refresh is on, and busy icons spin.
+- **A live feel**: every count flashes when it differs from the last refresh (active blue, dead letters orange or green), a "Live" indicator shows auto-refresh is on, and a running operation shows its progress under its tree row.
 
 ## Ideas
 

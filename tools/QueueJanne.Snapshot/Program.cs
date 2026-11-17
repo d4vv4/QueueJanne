@@ -126,6 +126,10 @@ Pump(() => refresh.IsCompleted);
 var pulseUntil = DateTime.UtcNow.AddMilliseconds(250);
 Pump(() => DateTime.UtcNow > pulseUntil);
 Save(window, Path.Combine(outputFolder, "pulse.png"));
+ledger.OperationText = "Purging… 120 done";
+Settle();
+Save(window, Path.Combine(outputFolder, "operation.png"));
+ledger.OperationText = null;
 viewModel.AutoRefresh = false;
 
 viewModel.ShowAllDeadLettersCommand.Execute(null);

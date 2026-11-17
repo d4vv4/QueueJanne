@@ -242,19 +242,20 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
                         break;
                     }
 
-                    foreach (var message in selected)
+                    var completions = await Task.WhenAll(selected.Select(async message =>
                     {
                         try
                         {
                             await receiver.CompleteMessageAsync(message, cancellationToken).ConfigureAwait(false);
-                            done++;
+                            return null;
                         }
                         catch (ServiceBusException ex)
                         {
-                            errors.Add($"Message {message.SequenceNumber} couldn't be removed: {ex.Message}");
+                            return $"Message {message.SequenceNumber} couldn't be removed: {ex.Message}";
                         }
-                    }
-
+                    })).ConfigureAwait(false);
+                    done += completions.Count(e => e is null);
+                    errors.AddRange(completions.OfType<string>());
                     progress?.Report(done);
                 }
 
@@ -266,7 +267,7 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
         }
         finally
         {
-            foreach (var message in passedOver)
+            await Task.WhenAll(passedOver.Select(async message =>
             {
                 try
                 {
@@ -276,7 +277,7 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
                 {
                     // The lock already expired, so the message is available again anyway.
                 }
-            }
+            })).ConfigureAwait(false);
         }
 
         return (done, errors);

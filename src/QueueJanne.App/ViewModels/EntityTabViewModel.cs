@@ -377,38 +377,38 @@ public sealed partial class EntityTabViewModel : DocumentViewModel
         }
     }
 
-    /// <summary>True for a moment after a refresh changes this entity's counts, so the sub-queue buttons can flash.</summary>
+    /// <summary>True for a moment after a refresh changes this entity's dead-letter counts, so the dead-letter buttons can flash.</summary>
     [ObservableProperty]
     private bool _isCountsPulsing;
 
-    public async void UpdateEntity(EntityInfo entity)
+    /// <summary>True for a moment after a refresh changes the active message count, so the Messages button can flash.</summary>
+    [ObservableProperty]
+    private bool _isActivePulsing;
+
+    public void UpdateEntity(EntityInfo entity)
     {
-        var changed = entity.Counts.Active != Entity.Counts.Active
-            || entity.Counts.DeadLetter != Entity.Counts.DeadLetter
+        var deadLettersChanged = entity.Counts.DeadLetter != Entity.Counts.DeadLetter
             || entity.Counts.TransferDeadLetter != Entity.Counts.TransferDeadLetter;
+        var activeChanged = entity.Counts.Active != Entity.Counts.Active;
         Entity = entity;
         OnPropertyChanged(nameof(ActiveLabel));
         OnPropertyChanged(nameof(DeadLetterLabel));
         OnPropertyChanged(nameof(TransferDeadLetterLabel));
         OnPropertyChanged(nameof(ShowsTransferDeadLetter));
         OnPropertyChanged(nameof(SettingsText));
-        if (!changed)
+        if (deadLettersChanged)
         {
-            return;
+            (_deadLetterPulse ??= new Pulse(on => IsCountsPulsing = on)).Start();
         }
 
-        var version = ++_pulseVersion;
-        IsCountsPulsing = false;
-        await Task.Yield();
-        IsCountsPulsing = true;
-        await Task.Delay(1600);
-        if (version == _pulseVersion)
+        if (activeChanged)
         {
-            IsCountsPulsing = false;
+            (_activePulse ??= new Pulse(on => IsActivePulsing = on)).Start();
         }
     }
 
-    private int _pulseVersion;
+    private Pulse? _deadLetterPulse;
+    private Pulse? _activePulse;
 
     public void SetSelection(IReadOnlyList<MessageRowViewModel> selection)
     {
@@ -542,11 +542,6 @@ public sealed partial class EntityTabViewModel : DocumentViewModel
             if (outcome is null)
             {
                 return;
-            }
-
-            if (Connection.FindEntity(Entity.Path) is { } node)
-            {
-                UpdateEntity(node.Entity);
             }
 
             // When the operation finished for chosen messages, drop just those rows: the rest of the tab, its scroll position

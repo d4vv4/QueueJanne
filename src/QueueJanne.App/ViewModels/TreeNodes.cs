@@ -11,16 +11,21 @@ namespace QueueJanne.App.ViewModels;
 /// <summary>A row in the Servers tree. <see cref="VisibleChildren"/> is <see cref="Children"/> after the filter.</summary>
 public abstract partial class TreeNodeViewModel : ObservableObject
 {
-    private static readonly TimeSpan PulseDuration = TimeSpan.FromMilliseconds(1600);
+    private readonly Pulse _deadLetterPulse;
+    private readonly Pulse _activePulse;
+    private long? _shownDeadLetters;
+    private long? _shownActive;
 
-    private string? _shownCounts;
-    private long _shownDeadLetters;
-    private int _pulseVersion;
+    protected TreeNodeViewModel()
+    {
+        _deadLetterPulse = new Pulse(on => IsPulsing = on);
+        _activePulse = new Pulse(on => IsActivePulsing = on);
+    }
 
     [ObservableProperty]
     private bool _isExpanded;
 
-    /// <summary>True for a moment after the counts change, so the row can flash. Rising means more dead letters.</summary>
+    /// <summary>True for a moment after the dead-letter count changes, so the row can flash. Rising means more dead letters.</summary>
     [ObservableProperty]
     private bool _isPulsing;
 
@@ -30,9 +35,14 @@ public abstract partial class TreeNodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFalling;
 
+    /// <summary>True for a moment after the active message count changes, so its number can flash.</summary>
+    [ObservableProperty]
+    private bool _isActivePulsing;
+
     public ObservableCollection<TreeNodeViewModel> Children { get; } = [];
 
-    public virtual bool IsBusy => false;
+    [ObservableProperty]
+    private string? _operationText;
 
     public ObservableCollection<TreeNodeViewModel> VisibleChildren { get; } = [];
 
@@ -45,6 +55,12 @@ public abstract partial class TreeNodeViewModel : ObservableObject
     public virtual string? CountText => null;
 
     public virtual long DeadLetters => 0;
+
+    public virtual long? ActiveCount => null;
+
+    public bool HasActive => ActiveCount is not null;
+
+    public string ActiveText => Formatting.Count(ActiveCount ?? 0);
 
     public bool HasDeadLetters => DeadLetters > 0;
 
@@ -133,39 +149,30 @@ public abstract partial class TreeNodeViewModel : ObservableObject
         OnPropertyChanged(nameof(DeadLetters));
         OnPropertyChanged(nameof(HasDeadLetters));
         OnPropertyChanged(nameof(DeadLetterText));
+        OnPropertyChanged(nameof(ActiveCount));
+        OnPropertyChanged(nameof(HasActive));
+        OnPropertyChanged(nameof(ActiveText));
         OnPropertyChanged(nameof(ToolTip));
-        OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(IsStateConnected));
         OnPropertyChanged(nameof(IsStateConnecting));
         OnPropertyChanged(nameof(IsStateFailed));
         OnPropertyChanged(nameof(StateText));
 
         // Only flash for changes seen on a refresh, not while the first load fills the tree.
-        var shown = $"{CountText}|{DeadLetters}";
-        if (_shownCounts is not null && shown != _shownCounts && Connection.HasLoadedOnce)
+        if (_shownDeadLetters is { } shown && shown != DeadLetters && Connection.HasLoadedOnce)
         {
-            Pulse(DeadLetters.CompareTo(_shownDeadLetters));
+            IsRising = DeadLetters > shown;
+            IsFalling = !IsRising;
+            _deadLetterPulse.Start();
         }
 
-        _shownCounts = shown;
+        if (_shownActive is { } active && active != ActiveCount && ActiveCount is not null && Connection.HasLoadedOnce)
+        {
+            _activePulse.Start();
+        }
+
         _shownDeadLetters = DeadLetters;
-    }
-
-    private async void Pulse(int direction)
-    {
-        var version = ++_pulseVersion;
-        IsPulsing = false;
-        IsRising = direction > 0;
-        IsFalling = direction < 0;
-
-        // Let the view drop the class first, so a second change during a pulse starts the animation again.
-        await Task.Yield();
-        IsPulsing = true;
-        await Task.Delay(PulseDuration);
-        if (version == _pulseVersion)
-        {
-            IsPulsing = false;
-        }
+        _shownActive = ActiveCount;
     }
 
     internal void SetChildren(IReadOnlyList<TreeNodeViewModel> children)
@@ -244,8 +251,6 @@ public sealed partial class ConnectionNodeViewModel : TreeNodeViewModel, IAsyncD
 
     /// <summary>Set after the first successful load, so later count changes can be highlighted.</summary>
     public bool HasLoadedOnce { get; private set; }
-
-    public override bool IsBusy => IsLoading;
 
     public override ConnectionNodeViewModel Connection => this;
 
@@ -487,7 +492,9 @@ public sealed class EntityNodeViewModel : TreeNodeViewModel
         _ => MaterialIconKind.SubdirectoryArrowRight,
     };
 
-    public override string? CountText => Entity.Kind == EntityKind.Topic ? null : $"({Formatting.Count(Entity.Counts.Active)})";
+    public override long? ActiveCount => Entity.Kind == EntityKind.Topic
+        ? Children.OfType<EntityNodeViewModel>().Sum(c => c.ActiveCount ?? 0)
+        : Entity.Counts.Active;
 
     public override long DeadLetters => Entity.Kind == EntityKind.Topic
         ? Children.OfType<EntityNodeViewModel>().Sum(c => c.DeadLetters)
