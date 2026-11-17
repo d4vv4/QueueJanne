@@ -31,7 +31,6 @@ public interface IDialogService
 
 public sealed record OperationOption(string Label, bool IsChecked);
 
-/// <param name="ConfirmText">When set, the person must type this text before the operation can start.</param>
 /// <param name="IsDestructive">Shows the action button in red, for operations that remove messages.</param>
 public sealed record OperationPrompt(
     string Title,
@@ -39,5 +38,4 @@ public sealed record OperationPrompt(
     string Summary,
     IReadOnlyList<string> Warnings,
     IReadOnlyList<OperationOption> Options,
-    string? ConfirmText,
     bool IsDestructive = false);

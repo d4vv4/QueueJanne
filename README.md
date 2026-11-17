@@ -95,7 +95,7 @@ For working on QueueJanne itself: `dotnet run --project src/QueueJanne.App`.
 
 - **Delete** removes the selected messages (button, right-click menu, or Del anywhere in the tab except a text box). Confirmation dialogs take Enter to confirm and Esc to cancel. In a dead-letter queue nothing else is affected. In an active queue, finding the messages means locking the ones in front of them for a moment, which raises their delivery count. The confirmation shows the entity's live max delivery count, so you can see whether that could dead-letter anything.
 - **Purge…** empties a queue or subscription. Pick any of active messages, the dead-letter queue and the transfer dead-letter queue. It's in the tab toolbar and on right-click in the Servers tree. In an active queue it stops at messages that arrived after the purge started. A dead-letter queue is emptied completely.
-- Both refuse read-only connections, and on production they ask you to type the entity name.
+- Both refuse read-only connections.
 
 ## Transfer dead letters
 
@@ -130,7 +130,7 @@ Open a dead-letter queue (double-click its node in the tree, or Ctrl+D). Select 
 - The confirmation lists what to know first:
   - Resubmitting from a subscription goes to the topic, so every subscription whose rules match gets a copy.
   - When the target has duplicate detection, copies with a known message ID are dropped, so a new ID is suggested.
-- Read-only connections refuse it. Right-click the connection and choose **Read-only on/off** to change that. On production, turning it off asks first, and each resubmit asks you to type the entity name.
+- Read-only connections refuse it. Right-click the connection and choose **Read-only on/off** to change that. On production, turning it off asks first.
 
 ## What it does today
 

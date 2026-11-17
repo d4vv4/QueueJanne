@@ -14,7 +14,7 @@ See README.md for what this repo does, how to install it and its projects. docs/
 
 ## Rules
 - The tool is generic. Never design around how one team configures Service Bus. Read entity settings (max delivery count, sessions, duplicate detection, forwarding) live and adapt.
-- Browsing peeks. Anything that locks, settles or sends messages is an operation: it respects `ConnectionProfile.ReadOnly`, shows warnings worked out from the entity's settings, and asks for the entity name on production. In the app, operations go through `EntityOperations`.
+- Browsing peeks. Anything that locks, settles or sends messages is an operation: it respects `ConnectionProfile.ReadOnly` and shows warnings worked out from the entity's settings. Never make the person type a name to confirm. In the app, operations go through `EntityOperations`.
 - Every operation that removes messages (resubmit, delete, move, purge) goes through `OperationJournal.RecordAsync`, in the app and in the MCP server, so the messages are backed up before they change.
 - Connections are lazy: `ConnectionNodeViewModel` starts disconnected and connects when expanded (`OnExpanded`) or when its overview opens; `DisconnectAsync` disposes the client. Refreshes only touch connected ones. Tests and the snapshot tool expand the demo connection first.
 - Keep the UI thread free: build rows off it, add them in batches (`BatchCollection.AddRange`), and remove rows in place after an operation rather than peeking again. The tab view is reused between tabs, so keep per-tab state in `EntityTabViewModel`, not in `EntityTabView`.

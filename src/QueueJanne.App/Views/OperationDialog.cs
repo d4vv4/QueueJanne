@@ -40,20 +40,8 @@ internal sealed class OperationDialog : Window
             panel.Children.Add(option);
         }
 
-        // Enter confirms and Esc cancels, also for operations that remove messages; on production the typed name guards it.
         var ok = new Button { Content = prompt.ActionLabel, Classes = { prompt.IsDestructive ? "danger" : "accent" }, MinWidth = 90, IsDefault = true };
-        Control focus = ok;
-        if (prompt.ConfirmText is { } confirmText)
-        {
-            panel.Children.Add(new TextBlock { Text = $"This is a production namespace. Type {confirmText} to confirm.", TextWrapping = TextWrapping.Wrap });
-            var confirm = new TextBox { PlaceholderText = confirmText };
-            confirm.TextChanged += (_, _) => ok.IsEnabled = confirm.Text == confirmText;
-            ok.IsEnabled = false;
-            panel.Children.Add(confirm);
-            focus = confirm;
-        }
-
-        Opened += (_, _) => focus.Focus();
+        Opened += (_, _) => ok.Focus();
 
         ok.Click += (_, _) => Close((IReadOnlyList<bool>)options.Select(o => o.IsChecked == true).ToList());
         var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 90 };

@@ -49,7 +49,7 @@ public class KeyboardAndTreeTests
     {
         var owner = new Window();
         owner.Show();
-        var prompt = new OperationPrompt("Delete messages", "Delete", "Delete 1 message?", [], [], ConfirmText: null, IsDestructive: true);
+        var prompt = new OperationPrompt("Delete messages", "Delete", "Delete 1 message?", [], [], IsDestructive: true);
 
         var confirmed = new OperationDialog(prompt);
         var result = confirmed.ShowDialog<IReadOnlyList<bool>?>(owner);
@@ -64,26 +64,6 @@ public class KeyboardAndTreeTests
         cancelled.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
         await WaitUntil(() => result.IsCompleted, "Esc has closed the dialog");
         Assert.Null(await result);
-        owner.Close();
-    });
-
-    [Fact]
-    public Task On_production_Enter_only_confirms_after_the_name_is_typed() => Run(async () =>
-    {
-        var owner = new Window();
-        owner.Show();
-        var dialog = new OperationDialog(new OperationPrompt("Purge", "Purge", "Purge orders?", [], [], ConfirmText: "orders", IsDestructive: true));
-        var result = dialog.ShowDialog<IReadOnlyList<bool>?>(owner);
-        await WaitUntil(() => dialog.IsVisible, "the dialog is open");
-
-        dialog.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-        await WaitUntil(() => true, "keys are handled");
-        Assert.False(result.IsCompleted);
-
-        dialog.KeyTextInput("orders");
-        dialog.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-        await WaitUntil(() => result.IsCompleted, "Enter has closed the dialog");
-        Assert.NotNull(await result);
         owner.Close();
     });
 

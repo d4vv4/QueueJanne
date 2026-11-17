@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using QueueJanne.Core.Bodies;
-using QueueJanne.Core.Connections;
 using QueueJanne.Core.Entities;
 using QueueJanne.Core.Messages;
 
@@ -19,11 +18,11 @@ public sealed partial class SendMessageViewModel : ObservableObject
     private byte[]? _keptBody;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Targets), nameof(IsProductionTarget), nameof(ConfirmHint), nameof(Warnings), nameof(HasWarnings))]
+    [NotifyPropertyChangedFor(nameof(Targets), nameof(Warnings), nameof(HasWarnings))]
     private ConnectionNodeViewModel? _connection;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ConfirmHint), nameof(Warnings), nameof(HasWarnings))]
+    [NotifyPropertyChangedFor(nameof(Warnings), nameof(HasWarnings))]
     private string? _target;
 
     [ObservableProperty]
@@ -59,9 +58,6 @@ public sealed partial class SendMessageViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Warnings), nameof(HasWarnings))]
     private bool _newMessageId;
-
-    [ObservableProperty]
-    private string? _confirmText;
 
     [ObservableProperty]
     private string? _error;
@@ -138,10 +134,6 @@ public sealed partial class SendMessageViewModel : ObservableObject
     }
 
     public bool HasWarnings => Warnings.Count > 0;
-
-    public bool IsProductionTarget => Connection?.Profile.EnvironmentKind == EnvironmentKind.Production;
-
-    public string ConfirmHint => $"This is a production namespace. Type {Target} to confirm.";
 
     public static SendMessageViewModel New(IReadOnlyList<ConnectionNodeViewModel> connections, ConnectionNodeViewModel? connection, string? target) =>
         new(Writable(connections), "Send message") { Connection = Pick(connections, connection), Target = target, BodyText = "{\n  \n}" };
@@ -264,11 +256,6 @@ public sealed partial class SendMessageViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(Target) || !Targets.Contains(Target.Trim(), StringComparer.OrdinalIgnoreCase))
         {
             return $"Choose a queue or topic in {Connection.Profile.Name}.";
-        }
-
-        if (IsProductionTarget && ConfirmText?.Trim() != Target.Trim())
-        {
-            return $"Type {Target.Trim()} to confirm sending to production.";
         }
 
         if (IsTransfer && Move && SourceIsReadOnly)

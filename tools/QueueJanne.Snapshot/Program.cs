@@ -97,8 +97,7 @@ var resubmit = new OperationDialog(new OperationPrompt(
     "Resubmit",
     "Resubmit 3 messages from billing-events/subscriptions/ledger (dead-letter) to 'billing-events'? Each copy is sent first, and the original is removed from the dead-letter queue only after that.",
     ResubmitAdvice.Warnings(connection.Snapshot!, ledgerDeadLetters, newMessageId: false),
-    [new OperationOption("Give each copy a new message ID (the old one is kept in the OriginalMessageId property)", false)],
-    ConfirmText: "billing-events/subscriptions/ledger"));
+    [new OperationOption("Give each copy a new message ID (the old one is kept in the OriginalMessageId property)", false)]));
 resubmit.Show();
 Settle();
 Save(resubmit, Path.Combine(outputFolder, "resubmit.png"));
@@ -114,7 +113,6 @@ var purge = new OperationDialog(new OperationPrompt(
         new OperationOption($"Dead-letter queue ({ledgerInfo.Counts.DeadLetter})", true),
         new OperationOption($"Transfer dead-letter queue ({ledgerInfo.Counts.TransferDeadLetter})", false),
     ],
-    ConfirmText: null,
     IsDestructive: true));
 purge.Show();
 Settle();

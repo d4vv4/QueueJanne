@@ -86,11 +86,6 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
-    <StackPanel Spacing="4" IsVisible="{Binding IsProductionTarget}">
-      <TextBlock Text="{Binding ConfirmHint}" TextWrapping="Wrap" Foreground="{DynamicResource QjTestForegroundBrush}" />
-      <TextBox AutomationProperties.Name="Confirm" Text="{Binding ConfirmText}" />
-    </StackPanel>
-
     <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="{DynamicResource QjDeadForegroundBrush}"
                IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 

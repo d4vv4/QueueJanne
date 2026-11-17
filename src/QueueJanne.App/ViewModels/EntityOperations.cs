@@ -1,5 +1,4 @@
 using QueueJanne.App.Services;
-using QueueJanne.Core.Connections;
 using QueueJanne.Core.Entities;
 using QueueJanne.Core.Messages;
 using QueueJanne.Core.ServiceBus;
@@ -39,8 +38,7 @@ internal static class EntityOperations
             $"Resubmit {Describe(rows, entity, subQueue)} from {address.DisplayName} to '{target}'? "
                 + "Each copy is sent first, and the original is removed from the dead-letter queue only after that.",
             snapshot is null ? [] : ResubmitAdvice.Warnings(snapshot, address, newMessageId: false),
-            [new OperationOption("Give each copy a new message ID (the old one is kept in the OriginalMessageId property)", snapshot is not null && ResubmitAdvice.TargetDetectsDuplicates(snapshot, address))],
-            ConfirmText(connection, entity)));
+            [new OperationOption("Give each copy a new message ID (the old one is kept in the OriginalMessageId property)", snapshot is not null && ResubmitAdvice.TargetDetectsDuplicates(snapshot, address))]));
         if (choice is null)
         {
             return null;
@@ -82,7 +80,6 @@ internal static class EntityOperations
             $"Delete {Describe(rows, entity, subQueue)} from {address.DisplayName}? This can't be undone; export them first if you might need them.",
             DeleteAdvice.ForDelete(entity, subQueue),
             [],
-            ConfirmText(connection, entity),
             IsDestructive: true));
         if (choice is null)
         {
@@ -130,7 +127,6 @@ internal static class EntityOperations
                 new OperationOption($"Dead-letter queue ({Formatting.Count(counts.DeadLetter)})", preselected == SubQueueKind.DeadLetter),
                 new OperationOption($"Transfer dead-letter queue ({Formatting.Count(counts.TransferDeadLetter)})", preselected == SubQueueKind.TransferDeadLetter),
             ],
-            ConfirmText(connection, entity),
             IsDestructive: true));
         var chosen = choice is null ? [] : kinds.Where((_, i) => choice[i]).ToList();
         if (chosen.Count == 0)
@@ -274,9 +270,6 @@ internal static class EntityOperations
             $"'{connection.Profile.Name}' is read-only, so QueueJanne won't change its messages. Right-click the connection and choose Read-only on/off to allow changes.");
         return false;
     }
-
-    private static string? ConfirmText(ConnectionNodeViewModel connection, EntityInfo entity) =>
-        connection.Profile.EnvironmentKind == EnvironmentKind.Production ? entity.Path : null;
 
     private static string Describe(IReadOnlyList<MessageRowViewModel>? rows, EntityInfo entity, SubQueueKind subQueue) => rows switch
     {
