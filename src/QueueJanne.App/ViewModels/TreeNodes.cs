@@ -18,22 +18,16 @@ public abstract partial class TreeNodeViewModel : ObservableObject
 
     protected TreeNodeViewModel()
     {
-        _deadLetterPulse = new Pulse(on => IsPulsing = on);
+        _deadLetterPulse = new Pulse(on => IsDeadLetterPulsing = on);
         _activePulse = new Pulse(on => IsActivePulsing = on);
     }
 
     [ObservableProperty]
     private bool _isExpanded;
 
-    /// <summary>True for a moment after the dead-letter count changes, so the row can flash. Rising means more dead letters.</summary>
+    /// <summary>True for a moment after the dead-letter count changes, so its number can flash.</summary>
     [ObservableProperty]
-    private bool _isPulsing;
-
-    [ObservableProperty]
-    private bool _isRising;
-
-    [ObservableProperty]
-    private bool _isFalling;
+    private bool _isDeadLetterPulsing;
 
     /// <summary>True for a moment after the active message count changes, so its number can flash.</summary>
     [ObservableProperty]
@@ -161,8 +155,6 @@ public abstract partial class TreeNodeViewModel : ObservableObject
         // Only flash for changes seen on a refresh, not while the first load fills the tree.
         if (_shownDeadLetters is { } shown && shown != DeadLetters && Connection.HasLoadedOnce)
         {
-            IsRising = DeadLetters > shown;
-            IsFalling = !IsRising;
             _deadLetterPulse.Start();
         }
 
