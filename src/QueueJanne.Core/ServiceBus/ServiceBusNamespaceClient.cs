@@ -13,6 +13,7 @@ namespace QueueJanne.Core.ServiceBus;
 public sealed class ServiceBusNamespaceClient : INamespaceClient
 {
     private const int MaxParallelTopics = 8;
+    private const int ReceiveBatch = 100;
 
     private readonly ServiceBusClient _client;
     private readonly ServiceBusAdministrationClient _administration;
@@ -89,8 +90,10 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
         await using var receiver = CreateLockingReceiver(source);
         await using var sender = _client.CreateSender(target);
         var wanted = request.SequenceNumbers is null ? null : new HashSet<long>(request.SequenceNumbers);
+        var expected = await CountAsync(source, cancellationToken).ConfigureAwait(false);
         var (count, errors) = await ProcessSelectedAsync(
             receiver,
+            expected,
             wanted,
             request.MaxMessages,
             async (selected, ct) =>
@@ -136,56 +139,79 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
         }
 
         await using var receiver = CreateLockingReceiver(address);
-        var (count, receiveErrors) = await ProcessSelectedAsync(receiver, wanted, int.MaxValue, (_, _) => Task.FromResult<string?>(null), progress, cancellationToken).ConfigureAwait(false);
+        var expected = await CountAsync(address, cancellationToken).ConfigureAwait(false);
+        var (count, receiveErrors) = await ProcessSelectedAsync(receiver, expected, wanted, int.MaxValue, (_, _) => Task.FromResult<string?>(null), progress, cancellationToken).ConfigureAwait(false);
         errors.AddRange(receiveErrors);
         return new MessageOperationResult(cancelled + count, wanted.Count, errors);
     }
 
-    public async Task<MessageOperationResult> PurgeAsync(EntityAddress address, IProgress<int>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<MessageOperationResult> PurgeAsync(
+        EntityAddress address,
+        IProgress<int>? progress = null,
+        Func<IReadOnlyList<QueueMessage>, Task>? beforeRemove = null,
+        CancellationToken cancellationToken = default)
     {
-        // Messages that arrive while purging stay; only those enqueued before it started are removed.
+        // Messages that arrive while purging stay; only those enqueued before it started are removed. A dead-letter
+        // queue gets nothing new from senders, so it is emptied completely.
         var startedAt = DateTimeOffset.UtcNow;
-        if (address.SubQueue != SubQueueKind.Active)
+        var expected = await CountAsync(address, cancellationToken).ConfigureAwait(false);
+        if (beforeRemove is null && address.SubQueue != SubQueueKind.Active)
         {
-            // Nothing processes a dead-letter queue, so receiving and deleting in one step is safe and much faster.
-            var options = new ServiceBusReceiverOptions { SubQueue = ToSdk(address.SubQueue), ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete, PrefetchCount = 500 };
-            await using var deleting = address.Kind == EntityKind.Subscription
-                ? _client.CreateReceiver(address.TopicName!, address.Name, options)
-                : _client.CreateReceiver(address.Name, options);
-            var deleted = 0;
-            while (true)
+            return await ReceiveAndDeleteAllAsync(address, expected, progress, cancellationToken).ConfigureAwait(false);
+        }
+
+        await using var receiver = CreateLockingReceiver(address);
+        var (count, errors) = await ProcessSelectedAsync(
+            receiver,
+            expected,
+            null,
+            int.MaxValue,
+            async (selected, _) =>
             {
-                var batch = await deleting.ReceiveMessagesAsync(500, TimeSpan.FromSeconds(3), cancellationToken).ConfigureAwait(false);
-                if (batch.Count == 0)
+                if (beforeRemove is not null)
                 {
-                    return new MessageOperationResult(deleted, 0, []);
+                    await beforeRemove(selected.Select(MessageMapper.Map).ToList()).ConfigureAwait(false);
                 }
 
-                deleted += batch.Count;
-                progress?.Report(deleted);
-            }
-        }
-
-        // On an active queue, lock and remove, and stop at messages that arrived after the purge started.
-        await using var receiver = CreateLockingReceiver(address);
-        {
-            var (count, errors) = await ProcessSelectedAsync(
-                receiver,
-                null,
-                int.MaxValue,
-                (_, _) => Task.FromResult<string?>(null),
-                progress,
-                cancellationToken,
-                take: message => message.EnqueuedTime < startedAt).ConfigureAwait(false);
-            return new MessageOperationResult(count, 0, errors);
-        }
+                return null;
+            },
+            progress,
+            cancellationToken,
+            take: address.SubQueue == SubQueueKind.Active ? message => message.EnqueuedTime < startedAt : null).ConfigureAwait(false);
+        return new MessageOperationResult(count, 0, errors);
     }
 
     public ValueTask DisposeAsync() => _client.DisposeAsync();
 
+    /// <summary>Empties a dead-letter sub-queue without locking: nothing else reads it, and nothing needs backing up first.</summary>
+    private async Task<MessageOperationResult> ReceiveAndDeleteAllAsync(EntityAddress address, long? expected, IProgress<int>? progress, CancellationToken cancellationToken)
+    {
+        var options = new ServiceBusReceiverOptions { SubQueue = ToSdk(address.SubQueue), ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete, PrefetchCount = 500 };
+        await using var receiver = address.Kind == EntityKind.Subscription
+            ? _client.CreateReceiver(address.TopicName!, address.Name, options)
+            : _client.CreateReceiver(address.Name, options);
+        var deleted = 0;
+        while (true)
+        {
+            var wait = deleted >= expected ? TimeSpan.FromMilliseconds(500) : TimeSpan.FromSeconds(3);
+            var batch = await receiver.ReceiveMessagesAsync(500, wait, cancellationToken).ConfigureAwait(false);
+            if (batch.Count == 0)
+            {
+                return new MessageOperationResult(deleted, 0, []);
+            }
+
+            deleted += batch.Count;
+            progress?.Report(deleted);
+        }
+    }
+
+    /// <summary>
+    /// A receiver that locks. Nothing else reads a dead-letter queue, so there it prefetches the next batch; on an active
+    /// queue prefetched messages would sit locked away from the consumers, so it doesn't.
+    /// </summary>
     private ServiceBusReceiver CreateLockingReceiver(EntityAddress address)
     {
-        var options = new ServiceBusReceiverOptions { SubQueue = ToSdk(address.SubQueue), PrefetchCount = 0 };
+        var options = new ServiceBusReceiverOptions { SubQueue = ToSdk(address.SubQueue), PrefetchCount = address.SubQueue == SubQueueKind.Active ? 0 : ReceiveBatch };
         return address.Kind == EntityKind.Subscription
             ? _client.CreateReceiver(address.TopicName!, address.Name, options)
             : _client.CreateReceiver(address.Name, options);
@@ -195,8 +221,36 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
     /// Receives with a lock, hands the chosen messages to <paramref name="beforeComplete"/> and removes them when it succeeds,
     /// and releases every other message it received at the end. With <paramref name="wanted"/> null, every message counts up to <paramref name="max"/>.
     /// </summary>
+    /// <summary>How many messages the sub-queue holds right now, or null when the count can't be read.</summary>
+    private async Task<long?> CountAsync(EntityAddress address, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (address.Kind == EntityKind.Subscription)
+            {
+                var subscription = (await _administration.GetSubscriptionRuntimePropertiesAsync(address.TopicName!, address.Name, cancellationToken).ConfigureAwait(false)).Value;
+                return Pick(subscription.ActiveMessageCount, subscription.DeadLetterMessageCount, subscription.TransferDeadLetterMessageCount);
+            }
+
+            var queue = (await _administration.GetQueueRuntimePropertiesAsync(address.Name, cancellationToken).ConfigureAwait(false)).Value;
+            return Pick(queue.ActiveMessageCount, queue.DeadLetterMessageCount, queue.TransferDeadLetterMessageCount);
+        }
+        catch (Exception ex) when (ex is RequestFailedException or UnauthorizedAccessException or ServiceBusException)
+        {
+            return null;
+        }
+
+        long Pick(long active, long deadLetter, long transferDeadLetter) => address.SubQueue switch
+        {
+            SubQueueKind.DeadLetter => deadLetter,
+            SubQueueKind.TransferDeadLetter => transferDeadLetter,
+            _ => active,
+        };
+    }
+
     private static async Task<(int Count, List<string> Errors)> ProcessSelectedAsync(
         ServiceBusReceiver receiver,
+        long? expected,
         HashSet<long>? wanted,
         int max,
         Func<IReadOnlyList<ServiceBusReceivedMessage>, CancellationToken, Task<string?>> beforeComplete,
@@ -212,7 +266,9 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
         {
             while ((wanted is null ? done < max : wanted.Count > 0) && errors.Count == 0)
             {
-                var batch = await receiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+                // Once every message the sub-queue held has come by, an empty receive only has to rule out stragglers.
+                var wait = seen.Count >= expected ? TimeSpan.FromMilliseconds(500) : TimeSpan.FromSeconds(5);
+                var batch = await receiver.ReceiveMessagesAsync(ReceiveBatch, wait, cancellationToken).ConfigureAwait(false);
                 var selected = new List<ServiceBusReceivedMessage>();
                 var anyNew = false;
                 var reachedEnd = false;

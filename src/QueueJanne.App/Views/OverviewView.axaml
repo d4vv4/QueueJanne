@@ -7,6 +7,12 @@
   <DockPanel>
     <Border DockPanel.Dock="Top" Classes="toolbar">
       <DockPanel>
+        <Button AutomationProperties.Name="Purge dead letters" DockPanel.Dock="Right" Classes="tool" Command="{Binding PurgeSelectedCommand}" ToolTip.Tip="Purge the selected queue or subscription, with its dead-letter queue preselected">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="DeleteSweepOutline" Width="16" Height="16" />
+            <TextBlock Text="Purge…" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
         <Button AutomationProperties.Name="Open dead letters" DockPanel.Dock="Right" Classes="tool" Command="{Binding OpenSelectedCommand}" ToolTip.Tip="Open the selected dead-letter queue (Enter or double-click)">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="EmailAlertOutline" Width="16" Height="16" />
@@ -27,6 +33,12 @@
               CanUserResizeColumns="True"
               DoubleTapped="OnRowDoubleTapped"
               KeyDown="OnGridKeyDown">
+      <DataGrid.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="Open dead letters" Command="{Binding OpenSelectedCommand}" />
+          <MenuItem Header="Purge…" Command="{Binding PurgeSelectedCommand}" />
+        </ContextMenu>
+      </DataGrid.ContextMenu>
       <DataGrid.Columns>
         <DataGridTextColumn Header="Connection" Binding="{ReflectionBinding ConnectionName}" Width="140" />
         <DataGridTextColumn Header="Queue or subscription" Binding="{ReflectionBinding Path}" Width="420" />

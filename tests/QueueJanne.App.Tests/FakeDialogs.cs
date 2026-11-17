@@ -14,6 +14,9 @@ public sealed class FakeDialogs : IDialogService
     /// <summary>Confirms operations with each option as the dialog proposed it. Set to false to cancel instead.</summary>
     public bool ConfirmOperations { get; set; } = true;
 
+    /// <summary>Changes the proposed options before confirming, such as ticking a box.</summary>
+    public Func<OperationPrompt, IReadOnlyList<bool>, IReadOnlyList<bool>> AnswerOptions { get; set; } = (_, proposed) => proposed;
+
     /// <summary>Picks a command palette item; the default closes the palette.</summary>
     public Func<IReadOnlyList<PaletteItem>, PaletteItem?> ChoosePaletteItem { get; set; } = _ => null;
 
@@ -43,7 +46,7 @@ public sealed class FakeDialogs : IDialogService
     public Task<IReadOnlyList<bool>?> ConfirmOperationAsync(OperationPrompt prompt)
     {
         Prompts.Add(prompt);
-        return Task.FromResult<IReadOnlyList<bool>?>(ConfirmOperations ? prompt.Options.Select(o => o.IsChecked).ToList() : null);
+        return Task.FromResult(ConfirmOperations ? AnswerOptions(prompt, prompt.Options.Select(o => o.IsChecked).ToList()) : null);
     }
 
     public Task<IReadOnlyList<OutgoingMessage>?> ShowSendAsync(SendMessageViewModel dialog) =>

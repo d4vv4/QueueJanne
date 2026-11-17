@@ -124,16 +124,31 @@ public sealed class DemoNamespaceClient : INamespaceClient
         }
     }
 
-    public async Task<MessageOperationResult> PurgeAsync(EntityAddress address, IProgress<int>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<MessageOperationResult> PurgeAsync(
+        EntityAddress address,
+        IProgress<int>? progress = null,
+        Func<IReadOnlyList<QueueMessage>, Task>? beforeRemove = null,
+        CancellationToken cancellationToken = default)
     {
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+        List<QueueMessage> all;
         lock (_gate)
         {
-            var all = Current(address).Where(m => m.State != MessageState.Scheduled).Select(m => m.SequenceNumber).ToList();
-            Removed(address).UnionWith(all);
-            progress?.Report(all.Count);
-            return new MessageOperationResult(all.Count, 0, []);
+            all = Current(address).Where(m => m.State != MessageState.Scheduled).ToList();
         }
+
+        if (beforeRemove is not null)
+        {
+            await beforeRemove(all).ConfigureAwait(false);
+        }
+
+        lock (_gate)
+        {
+            Removed(address).UnionWith(all.Select(m => m.SequenceNumber));
+        }
+
+        progress?.Report(all.Count);
+        return new MessageOperationResult(all.Count, 0, []);
     }
 
     public async Task SendAsync(string entityName, IReadOnlyList<OutgoingMessage> messages, CancellationToken cancellationToken = default)

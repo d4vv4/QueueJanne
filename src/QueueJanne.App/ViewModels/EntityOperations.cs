@@ -126,6 +126,7 @@ internal static class EntityOperations
                 new OperationOption($"Active messages ({Formatting.Count(counts.Active)})", preselected == SubQueueKind.Active),
                 new OperationOption($"Dead-letter queue ({Formatting.Count(counts.DeadLetter)})", preselected == SubQueueKind.DeadLetter),
                 new OperationOption($"Transfer dead-letter queue ({Formatting.Count(counts.TransferDeadLetter)})", preselected == SubQueueKind.TransferDeadLetter),
+                new OperationOption($"Save the messages to the operation journal first (up to {Formatting.Count(OperationJournal.MaxBackup)}; slower)", false),
             ],
             IsDestructive: true));
         var chosen = choice is null ? [] : kinds.Where((_, i) => choice[i]).ToList();
@@ -134,6 +135,8 @@ internal static class EntityOperations
             return null;
         }
 
+        var saveToJournal = choice![kinds.Length];
+
         return await RunAsync(connection, entity.Path, dialogs, "Purge", progress, "Purging", null, async reporter =>
         {
             var parts = new List<string>();
@@ -141,15 +144,13 @@ internal static class EntityOperations
             foreach (var kind in chosen)
             {
                 var address = EntityAddress.For(entity, kind);
-                progress.Report($"Backing up {Name(kind)} to the journal…");
-                var result = await Journal.RecordAsync(
-                    Entry(connection, "purge"),
-                    connection.Client,
-                    address,
-                    known: null,
-                    sequenceNumbers: null,
-                    () => connection.Client.PurgeAsync(address, reporter),
-                    r => ($"Purged {Formatting.Count(r.Count)}", r.Errors));
+                var result = saveToJournal
+                    ? await Journal.RecordPurgeAsync(
+                        Entry(connection, "purge"),
+                        address,
+                        backup => connection.Client.PurgeAsync(address, reporter, backup),
+                        r => ($"Purged {Formatting.Count(r.Count)}", r.Errors))
+                    : await connection.Client.PurgeAsync(address, reporter);
                 parts.Add($"{Formatting.Count(result.Count)} {Name(kind)}");
                 errors.AddRange(result.Errors);
             }
