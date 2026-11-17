@@ -47,13 +47,21 @@ public sealed record JournalEntry
 
 /// <summary>
 /// A local log of operations that change messages, kept in <c>~/.queuejanne/journal</c> with one JSON file per operation.
-/// The messages are saved before the operation starts, so they can be recovered from the file if something goes wrong.
+/// The messages are saved before they change, so they can be recovered from the file if something goes wrong. A purge
+/// backs up each batch just before removing it, into a <c>.messages.jsonl</c> file next to the entry.
 /// Entries older than <see cref="KeepDays"/> days are removed.
 /// </summary>
 public sealed class OperationJournal(string folder)
 {
     public const int MaxBackup = 5_000;
     public const int KeepDays = 90;
+
+    private static readonly JsonSerializerOptions LineOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -88,9 +96,67 @@ public sealed class OperationJournal(string folder)
 
     /// <summary>Adds the outcome to an entry written by <see cref="Begin"/>.</summary>
     public void Complete(string path, string outcome, IReadOnlyList<string> errors) =>
-        File.WriteAllText(path, JsonSerializer.Serialize(Load(path) with { Outcome = outcome, Errors = errors }, Options));
+        File.WriteAllText(path, JsonSerializer.Serialize(ReadEntry(path) with { Outcome = outcome, Errors = errors }, Options));
 
-    public static JournalEntry Load(string path) => JsonSerializer.Deserialize<JournalEntry>(File.ReadAllText(path), Options)!;
+    /// <summary>The entry with all its messages, including those a purge backed up batch by batch.</summary>
+    public static JournalEntry Load(string path)
+    {
+        var entry = ReadEntry(path);
+        var lines = LinesPath(path);
+        return File.Exists(lines)
+            ? entry with { Messages = [.. entry.Messages, .. File.ReadLines(lines).Where(l => l.Length > 0).Select(l => JsonSerializer.Deserialize<ExportedMessage>(l, LineOptions)!)] }
+            : entry;
+    }
+
+    private static JournalEntry ReadEntry(string path) => JsonSerializer.Deserialize<JournalEntry>(File.ReadAllText(path), Options)!;
+
+    private static string LinesPath(string path) => Path.ChangeExtension(path, ".messages.jsonl");
+
+    /// <summary>
+    /// Writes the entry, runs a purge that hands each batch to the backup before removing it, and records how it went.
+    /// Up to <see cref="MaxBackup"/> messages are backed up; the entry says when there were more.
+    /// </summary>
+    public async Task<T> RecordPurgeAsync<T>(
+        JournalEntry entry,
+        EntityAddress address,
+        Func<Func<IReadOnlyList<QueueMessage>, Task>, Task<T>> run,
+        Func<T, (string Outcome, IReadOnlyList<string> Errors)> describe)
+    {
+        var path = Begin(entry with { Entity = address.EntityPath, SubQueue = address.SubQueue, BackupComplete = true });
+        var backedUp = 0;
+        var seen = 0;
+
+        async Task Backup(IReadOnlyList<QueueMessage> batch)
+        {
+            seen += batch.Count;
+            var take = Math.Min(batch.Count, MaxBackup - backedUp);
+            if (take <= 0)
+            {
+                return;
+            }
+
+            await File.AppendAllLinesAsync(LinesPath(path), batch.Take(take).Select(m => JsonSerializer.Serialize(MessageExport.ToExported(m), LineOptions))).ConfigureAwait(false);
+            backedUp += take;
+        }
+
+        T result;
+        try
+        {
+            result = await run(Backup).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Finish("Failed: " + ex.Message, []);
+            throw;
+        }
+
+        var (outcome, errors) = describe(result);
+        Finish(outcome, errors);
+        return result;
+
+        void Finish(string outcome, IReadOnlyList<string> errors) =>
+            File.WriteAllText(path, JsonSerializer.Serialize(ReadEntry(path) with { Outcome = outcome, Errors = errors, BackupComplete = seen <= MaxBackup }, Options));
+    }
 
     /// <summary>
     /// Backs up the messages, writes the entry, runs the operation and records how it went, also when it throws.

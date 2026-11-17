@@ -69,7 +69,7 @@ public class ResubmitTests
         var subscriptionWarnings = ResubmitAdvice.Warnings(snapshot, EntityAddress.Subscription("billing-events", "ledger", SubQueueKind.DeadLetter), newMessageId: false);
         var duplicateWarnings = ResubmitAdvice.Warnings(snapshot, EntityAddress.Queue("invoices", SubQueueKind.DeadLetter), newMessageId: false);
 
-        Assert.Contains("invoicing, audit", Assert.Single(subscriptionWarnings));
+        Assert.Contains("its 2 other subscriptions", Assert.Single(subscriptionWarnings));
         Assert.Contains("duplicate detection", Assert.Single(duplicateWarnings));
         Assert.Empty(ResubmitAdvice.Warnings(snapshot, EntityAddress.Queue("invoices", SubQueueKind.DeadLetter), newMessageId: true));
     }

@@ -45,6 +45,31 @@ public sealed class OperationJournalTests : IDisposable
     }
 
     [Fact]
+    public async Task A_purge_backs_up_each_batch_before_removing_it()
+    {
+        await using var client = new DemoNamespaceClient();
+        var journal = new OperationJournal(_folder);
+        var address = EntityAddress.Queue("orders", SubQueueKind.DeadLetter);
+        var before = await OperationJournal.CollectAsync(client, address, null, TestContext.Current.CancellationToken);
+
+        var result = await journal.RecordPurgeAsync(
+            new JournalEntry { Source = "test", Operation = "purge", Connection = "Demo" },
+            address,
+            backup => client.PurgeAsync(address, beforeRemove: async batch =>
+            {
+                await backup(batch);
+                Assert.Equal(batch.Count, OperationJournal.Load(Directory.GetFiles(_folder, "*.json", SearchOption.AllDirectories).Single()).Messages.Count);
+            }, cancellationToken: TestContext.Current.CancellationToken),
+            r => ($"Purged {r.Count}", r.Errors));
+
+        var entry = OperationJournal.Load(Directory.GetFiles(_folder, "*.json", SearchOption.AllDirectories).Single());
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Purged 3", entry.Outcome);
+        Assert.True(entry.BackupComplete);
+        Assert.Equal(before.Messages.Select(m => m.SequenceNumber), entry.Messages.Select(m => m.SequenceNumber));
+    }
+
+    [Fact]
     public async Task Records_a_failure_and_rethrows()
     {
         await using var client = new DemoNamespaceClient();

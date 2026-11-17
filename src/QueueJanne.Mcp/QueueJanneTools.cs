@@ -392,15 +392,11 @@ public sealed class QueueJanneTools(ConnectionStore store, NamespaceClientCache 
         var address = await ResolveAsync(profile, client, entity, ParseSubQueue(subQueue), cancellationToken).ConfigureAwait(false);
         var snapshot = await clients.GetSnapshotAsync(profile, client, refresh: true, cancellationToken).ConfigureAwait(false);
         var info = snapshot.ReadableEntities.FirstOrDefault(e => e.Path == address.EntityPath);
-        var result = await OperationJournal.Default.RecordAsync(
+        var result = await OperationJournal.Default.RecordPurgeAsync(
             Entry(profile, "purge"),
-            client,
             address,
-            known: null,
-            sequenceNumbers: null,
-            () => client.PurgeAsync(address, cancellationToken: cancellationToken),
-            r => ($"Purged {r.Count}", r.Errors),
-            cancellationToken).ConfigureAwait(false);
+            backup => client.PurgeAsync(address, beforeRemove: backup, cancellationToken: cancellationToken),
+            r => ($"Purged {r.Count}", r.Errors)).ConfigureAwait(false);
         return new OperationReport(profile.Name, address.DisplayName, result.Count, result.NotFound, result.Errors, DeleteAdvice.ForPurge(info, [address.SubQueue]));
     }
 

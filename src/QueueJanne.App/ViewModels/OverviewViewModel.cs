@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using QueueJanne.Core.Entities;
+using QueueJanne.Core.Messages;
 
 namespace QueueJanne.App.ViewModels;
 
@@ -13,6 +14,7 @@ namespace QueueJanne.App.ViewModels;
 public sealed partial class OverviewViewModel : DocumentViewModel
 {
     private readonly Action<ConnectionNodeViewModel, EntityInfo> _openDeadLetters;
+    private readonly Func<ConnectionNodeViewModel, EntityInfo, SubQueueKind, Task> _purge;
     private Dictionary<string, long> _previous = new(StringComparer.Ordinal);
 
     [ObservableProperty]
@@ -21,11 +23,16 @@ public sealed partial class OverviewViewModel : DocumentViewModel
     [ObservableProperty]
     private OverviewRow? _selectedRow;
 
-    public OverviewViewModel(ConnectionNodeViewModel? connection, Action<DocumentViewModel> close, Action<ConnectionNodeViewModel, EntityInfo> openDeadLetters)
+    public OverviewViewModel(
+        ConnectionNodeViewModel? connection,
+        Action<DocumentViewModel> close,
+        Action<ConnectionNodeViewModel, EntityInfo> openDeadLetters,
+        Func<ConnectionNodeViewModel, EntityInfo, SubQueueKind, Task> purge)
         : base(close)
     {
         Connection = connection;
         _openDeadLetters = openDeadLetters;
+        _purge = purge;
     }
 
     /// <summary>The connection this overview covers, or null for all connections.</summary>
@@ -40,7 +47,7 @@ public sealed partial class OverviewViewModel : DocumentViewModel
     public override string ToolTip => (Connection is null
             ? "Every queue and subscription with dead letters, in every connection."
             : $"Every queue and subscription with dead letters in {Connection.Profile.Name} ({Connection.Profile.Namespace}).")
-        + " Double-click a row to open its dead-letter queue."
+        + " Double-click a row to open its dead-letter queue, or purge it from the toolbar or the right-click menu."
         + (IsPreview ? "\nPreview tab: the next single click replaces it. Double-click to keep it open." : string.Empty);
 
     public override MaterialIconKind Icon => MaterialIconKind.ViewDashboardOutline;
@@ -111,6 +118,12 @@ public sealed partial class OverviewViewModel : DocumentViewModel
             _openDeadLetters(row.Connection, row.Entity);
         }
     }
+
+    /// <summary>Purges the selected row, with its dead-letter queue preselected (or the transfer one when only that has messages).</summary>
+    [RelayCommand]
+    private Task PurgeSelectedAsync() => SelectedRow is { } row
+        ? _purge(row.Connection, row.Entity, row.Entity.Counts.DeadLetter == 0 && row.Entity.Counts.TransferDeadLetter > 0 ? SubQueueKind.TransferDeadLetter : SubQueueKind.DeadLetter)
+        : Task.CompletedTask;
 }
 
 public sealed class OverviewRow(ConnectionNodeViewModel connection, EntityInfo entity, string key, long? change)

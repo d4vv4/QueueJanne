@@ -2,7 +2,7 @@
 
 QueueJanne is a fast desktop explorer for Azure Service Bus. It runs on Windows and macOS, keeps several namespaces open at once, and makes dead-letter queues quick to find, read, resubmit and clean up. An MCP server built on the same core lets Claude list entities, peek messages and work with dead-letter queues too.
 
-Status: **0.6**. Browsing, the dead-letter overview, filtering and grouping, resubmitting, deleting, purging, sending, editing and resending, copying and moving all work in the app and through the MCP server. Every change is journalled with a backup of the messages. [docs/ROADMAP.md](docs/ROADMAP.md) lists what it does and ideas for what's next.
+Status: **0.6**. Browsing, the dead-letter overview, filtering and grouping, resubmitting, deleting, purging, sending, editing and resending, copying and moving all work in the app and through the MCP server. Every change except an app purge is journalled with a backup of the messages; a purge can opt in. [docs/ROADMAP.md](docs/ROADMAP.md) lists what it does and ideas for what's next.
 
 ## Install
 
@@ -112,7 +112,7 @@ QueueJanne only shows it when it holds messages: a Transfer dead-letter node in 
 
 ## Operation journal
 
-Every resubmit, delete, move and purge, from the app or from Claude through the MCP server, is written to `~/.queuejanne/journal` first: one JSON file per operation with who, when, where, the outcome, and a copy of the messages (up to 5,000) in QueueJanne's export format. If something goes wrong you can find the messages there. **View → Operation journal…** opens the folder. Entries are kept for 90 days.
+Every resubmit, delete and move, from the app or from Claude through the MCP server, is written to `~/.queuejanne/journal` first: one JSON file per operation with who, when, where, the outcome, and a copy of the messages (up to 5,000) in QueueJanne's export format. A purge from the MCP server is journalled too; in the app it is only when you tick **Save the messages to the operation journal first**, which backs each batch up just before removing it. If something goes wrong you can find the messages there. **View → Operation journal…** opens the folder. Entries are kept for 90 days.
 
 ## Finding things fast
 

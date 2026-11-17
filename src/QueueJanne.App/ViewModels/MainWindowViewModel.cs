@@ -141,7 +141,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return existing;
         }
 
-        var overview = new OverviewViewModel(connection, CloseTab, OpenDeadLetters);
+        var overview = new OverviewViewModel(connection, CloseTab, OpenDeadLetters, PurgeAsync);
         overview.Refresh(Connections);
         Show(overview, preview);
         return overview;
@@ -475,8 +475,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        await PurgeAsync(entity.Connection, entity.Entity, subQueue);
+    }
+
+    private async Task PurgeAsync(ConnectionNodeViewModel connection, EntityInfo entity, SubQueueKind subQueue)
+    {
         var finished = false;
-        var outcome = await EntityOperations.PurgeAsync(entity.Connection, entity.Entity, subQueue, _dialogs, new Progress<string>(text =>
+        var outcome = await EntityOperations.PurgeAsync(connection, entity, subQueue, _dialogs, new Progress<string>(text =>
         {
             if (!finished)
             {
@@ -489,7 +494,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        foreach (var tab in EntityTabs.Where(t => t.Connection == entity.Connection && t.Entity.Path == entity.Entity.Path).ToList())
+        foreach (var tab in EntityTabs.Where(t => t.Connection == connection && t.Entity.Path == entity.Path).ToList())
         {
             _ = tab.LoadAsync();
         }

@@ -107,6 +107,41 @@ public class MainWindowTests
     });
 
     [Fact]
+    public Task Purge_writes_the_journal_only_when_asked() => Run(async () =>
+    {
+        var (window, viewModel, dialogs) = await OpenDemoAsync();
+        var orders = await OpenTabAsync(viewModel, "orders", SubQueueKind.DeadLetter);
+        await orders.PurgeCommand.ExecuteAsync(null);
+        await WaitUntil(() => orders.DeadLetterLabel.Contains("(0)"), "orders' dead-letter queue is empty");
+
+        dialogs.AnswerOptions = (_, proposed) => [.. proposed.Take(proposed.Count - 1), true];
+        var invoices = await OpenTabAsync(viewModel, "invoices", SubQueueKind.DeadLetter);
+        await invoices.PurgeCommand.ExecuteAsync(null);
+        await WaitUntil(() => invoices.DeadLetterLabel.Contains("(0)"), "invoices' dead-letter queue is empty");
+
+        var journalled = Directory.GetFiles(Path.Combine(Home, "journal"), "*purge*.json", SearchOption.AllDirectories);
+        Assert.DoesNotContain(journalled, f => f.Contains("-orders-"));
+        Assert.Equal(286, OperationJournal.Load(Assert.Single(journalled, f => f.Contains("-invoices-"))).Messages.Count);
+        window.Close();
+    });
+
+    [Fact]
+    public Task The_overview_purges_the_selected_rows_dead_letters() => Run(async () =>
+    {
+        var (window, viewModel, dialogs) = await OpenDemoAsync();
+        var connection = viewModel.Connections[0];
+        var overview = viewModel.OpenOverview(connection, preview: false);
+        overview.SelectedRow = overview.Rows.Single(r => r.Path == "orders");
+
+        await overview.PurgeSelectedCommand.ExecuteAsync(null);
+
+        Assert.Contains(dialogs.Prompts, p => p.Title == "Purge" && p.Options[1].IsChecked && !p.Options[0].IsChecked);
+        await WaitUntil(() => connection.FindEntity("orders")!.Entity.Counts.DeadLetter == 0, "orders' dead letters are purged");
+        await WaitUntil(() => overview.Rows.All(r => r.Path != "orders" || r.DeadLetters == 0), "the overview has refreshed");
+        window.Close();
+    });
+
+    [Fact]
     public Task Cancelling_an_operation_changes_nothing() => Run(async () =>
     {
         var (window, viewModel, dialogs) = await OpenDemoAsync();

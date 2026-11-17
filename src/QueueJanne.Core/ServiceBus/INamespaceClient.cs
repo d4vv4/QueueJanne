@@ -23,8 +23,16 @@ public interface INamespaceClient : IAsyncDisposable
     /// <summary>Removes specific messages. On an active queue this receives (and so locks) the messages in front of them.</summary>
     Task<MessageOperationResult> DeleteAsync(EntityAddress address, DeleteRequest request, IProgress<int>? progress = null, CancellationToken cancellationToken = default);
 
-    /// <summary>Removes every message enqueued before the purge started, without receiving them where the service allows it.</summary>
-    Task<MessageOperationResult> PurgeAsync(EntityAddress address, IProgress<int>? progress = null, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Removes every message enqueued before the purge started. With <paramref name="beforeRemove"/>, each batch goes to it
+    /// first, so it can be backed up, and is only removed when that succeeded; without it a dead-letter queue is emptied
+    /// with receive-and-delete, which is much faster.
+    /// </summary>
+    Task<MessageOperationResult> PurgeAsync(
+        EntityAddress address,
+        IProgress<int>? progress = null,
+        Func<IReadOnlyList<QueueMessage>, Task>? beforeRemove = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Sends messages to a queue or topic.</summary>
     Task SendAsync(string entityName, IReadOnlyList<OutgoingMessage> messages, CancellationToken cancellationToken = default);
