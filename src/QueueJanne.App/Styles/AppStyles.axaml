@@ -170,27 +170,11 @@
     <Setter Property="Foreground" Value="{DynamicResource QjDevForegroundBrush}" />
   </Style>
 
-  <!-- Life: rows flash when their dead-letter counts change, active counts flash blue, and badges pop. -->
+  <!-- Life: a count badge flashes and pops when its number differs from the last refresh. -->
   <Style Selector="Border.node">
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="Padding" Value="3,1" />
     <Setter Property="Margin" Value="-3,0,0,0" />
-  </Style>
-  <Style Selector="Border.node.pulse.rising">
-    <Style.Animations>
-      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
-        <KeyFrame Cue="0%"><Setter Property="Background" Value="#80F5A623" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="Background" Value="#00F5A623" /></KeyFrame>
-      </Animation>
-    </Style.Animations>
-  </Style>
-  <Style Selector="Border.node.pulse.falling">
-    <Style.Animations>
-      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
-        <KeyFrame Cue="0%"><Setter Property="Background" Value="#6634C759" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="Background" Value="#0034C759" /></KeyFrame>
-      </Animation>
-    </Style.Animations>
   </Style>
   <Style Selector="Border.badge.active.pulse">
     <Style.Animations>
@@ -205,8 +189,12 @@
       </Animation>
     </Style.Animations>
   </Style>
-  <Style Selector="Border.node.pulse Border.badge.dead">
+  <Style Selector="Border.badge.dead.pulse">
     <Style.Animations>
+      <Animation Duration="0:0:1.5" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="Background" Value="#CCE5484D" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Background" Value="#33E5484D" /></KeyFrame>
+      </Animation>
       <Animation Duration="0:0:0.45" Easing="BackEaseOut">
         <KeyFrame Cue="0%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /></KeyFrame>
         <KeyFrame Cue="40%"><Setter Property="ScaleTransform.ScaleX" Value="1.35" /><Setter Property="ScaleTransform.ScaleY" Value="1.35" /></KeyFrame>

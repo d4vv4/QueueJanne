@@ -72,7 +72,7 @@ public class MainWindowTests
         await WaitUntil(() => tab.DeadLetterLabel.Contains("Dead-letter (40)"), "the counts have refreshed");
         var node = viewModel.Connections[0].FindEntity("notifications")!;
         Assert.Null(node.OperationText);
-        Assert.True(node.IsFalling);
+        await WaitUntil(() => node.IsDeadLetterPulsing, "the dead-letter count flashes");
         var journal = Directory.GetFiles(Path.Combine(Home, "journal"), "*delete-notifications*", SearchOption.AllDirectories)
             .Select(OperationJournal.Load)
             .Single(e => e.Messages.Any(m => m.SequenceNumber == rows[3].SequenceNumber));
@@ -81,7 +81,7 @@ public class MainWindowTests
     });
 
     [Fact]
-    public Task A_new_active_count_flashes_the_number_but_not_the_row() => Run(async () =>
+    public Task A_new_active_count_flashes_only_the_active_number() => Run(async () =>
     {
         var (window, viewModel, _) = await OpenDemoAsync();
         var connection = viewModel.Connections[0];
@@ -93,7 +93,7 @@ public class MainWindowTests
 
         Assert.Equal(before + 1, orders.ActiveCount);
         await WaitUntil(() => orders.IsActivePulsing, "the active count flashes");
-        Assert.False(orders.IsPulsing);
+        Assert.False(orders.IsDeadLetterPulsing);
 
         var topic = connection.FindEntity("billing-events")!;
         var topicBefore = topic.ActiveCount;

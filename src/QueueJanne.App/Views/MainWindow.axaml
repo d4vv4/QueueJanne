@@ -217,7 +217,7 @@
           </TreeView.Styles>
           <TreeView.ItemTemplate>
             <TreeDataTemplate DataType="vm:TreeNodeViewModel" ItemsSource="{Binding VisibleChildren}">
-              <Border Classes="node" Classes.pulse="{Binding IsPulsing}" Classes.rising="{Binding IsRising}" Classes.falling="{Binding IsFalling}"
+              <Border Classes="node"
                       Background="Transparent" Tapped="OnTreeRowTapped">
               <StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent" ToolTip.Tip="{Binding ToolTip}">
@@ -231,7 +231,7 @@
                         ToolTip.Tip="Active messages"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
                   <TextBlock Text="{Binding ActiveText}" />
                 </Border>
-                <Border Classes="badge dead" IsVisible="{Binding HasDeadLetters}"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
+                <Border Classes="badge dead" Classes.pulse="{Binding IsDeadLetterPulsing}" IsVisible="{Binding HasDeadLetters}"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform>
                   <TextBlock Text="{Binding DeadLetterText}" />
                 </Border>
                 <Border Classes="badge env"
