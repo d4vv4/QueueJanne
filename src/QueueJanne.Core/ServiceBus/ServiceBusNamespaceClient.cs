@@ -86,6 +86,7 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
             throw new InvalidOperationException("Resubmit reads from a dead-letter queue, not from the active queue.");
         }
 
+        var startedAt = DateTimeOffset.UtcNow;
         var target = ResubmitAdvice.TargetOf(source);
         await using var receiver = CreateLockingReceiver(source);
         await using var sender = _client.CreateSender(target);
@@ -95,7 +96,7 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
             receiver,
             expected,
             wanted,
-            request.MaxMessages,
+            wanted is null && expected is { } held ? (int)Math.Min(request.MaxMessages, held) : request.MaxMessages,
             async (selected, ct) =>
             {
                 try
@@ -109,7 +110,8 @@ public sealed class ServiceBusNamespaceClient : INamespaceClient
                 }
             },
             progress,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            take: wanted is null ? message => message.EnqueuedTime < startedAt : null).ConfigureAwait(false);
         return new ResubmitResult(target, count, wanted?.Count ?? 0, errors);
     }
 
