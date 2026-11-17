@@ -35,13 +35,11 @@ public static class ResubmitAdvice
         {
             var others = snapshot.Topics
                 .FirstOrDefault(t => t.Topic.Name.Equals(target, StringComparison.OrdinalIgnoreCase))?
-                .Subscriptions.Where(s => !s.Name.Equals(source.Name, StringComparison.OrdinalIgnoreCase))
-                .Select(s => s.Name)
-                .ToList() ?? [];
-            warnings.Add(others.Count == 0
-                ? $"Subscriptions can't be sent to directly, so the messages go to topic '{target}'."
-                : $"Subscriptions can't be sent to directly, so the messages go to topic '{target}'. "
-                  + $"Every other subscription whose rules match gets a copy too: {string.Join(", ", others)}.");
+                .Subscriptions.Count(s => !s.Name.Equals(source.Name, StringComparison.OrdinalIgnoreCase)) ?? 0;
+            warnings.Add(others == 0
+                ? $"Goes to topic '{target}', since subscriptions can't be sent to directly."
+                : $"Goes to topic '{target}', since subscriptions can't be sent to directly. "
+                  + $"Any of its {others} other subscriptions whose rules match also gets a copy.");
         }
 
         if (TargetSettings(snapshot, source) is { RequiresDuplicateDetection: true } settings && !newMessageId)

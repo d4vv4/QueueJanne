@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -42,6 +43,24 @@ public class KeyboardAndTreeTests
 
         Assert.Empty(dialogs.Prompts);
         window.Close();
+    });
+
+    [Fact]
+    public Task A_long_warning_scrolls_and_keeps_the_buttons_on_screen() => Run(async () =>
+    {
+        var owner = new Window();
+        owner.Show();
+        var warning = string.Join(", ", Enumerable.Range(0, 400).Select(i => $"subscription-{i}"));
+        var dialog = new OperationDialog(new OperationPrompt("Resubmit messages", "Resubmit", "Resubmit 1 message?", [warning], [], IsDestructive: false));
+        _ = dialog.ShowDialog<IReadOnlyList<bool>?>(owner);
+        await WaitUntil(() => dialog.IsVisible, "the dialog is open");
+
+        var ok = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Content as string == "Resubmit");
+        var bottom = ok.TranslatePoint(new Point(0, ok.Bounds.Height), dialog)!.Value.Y;
+        Assert.True(dialog.Bounds.Height <= 640, $"the dialog is {dialog.Bounds.Height} high");
+        Assert.True(bottom <= dialog.Bounds.Height, $"the button ends at {bottom}, the dialog at {dialog.Bounds.Height}");
+        dialog.Close();
+        owner.Close();
     });
 
     [Fact]
